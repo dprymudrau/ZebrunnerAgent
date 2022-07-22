@@ -68,7 +68,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         zebrunnerClient.finishTestRun()
     }
     
-    private func getTestSuiteName(for testCase: XCTestCase) -> String? {
+    private func getTestSuiteName(for testCase: XCTestCase) -> String {
         for (suiteName, cases) in testSuiteDictionary {
             for test in cases {
                 if test.name == testCase.name {
