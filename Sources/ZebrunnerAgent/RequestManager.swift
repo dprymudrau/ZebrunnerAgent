@@ -95,7 +95,7 @@ class RequestManager {
     public func buildFinishTestRequest(testRunId: Int, testId: Int, result: String, reason: String, endTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
+        request.httpMethod = "PUT"
         request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
         if let token = authToken {
             request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)

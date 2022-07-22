@@ -69,10 +69,11 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
                                        reason: failureDescription,
                                        name: testCase.name,
                                        endTime: Date().toString())
+        } else {
+            zebrunnerClient.finishTest(result: "FAILED",
+                                       name: testCase.name,
+                                       endTime: Date().toString())
         }
-        zebrunnerClient.finishTest(result: "FAILED",
-                                   name: testCase.name,
-                                   endTime: Date().toString())
     }
     
     public func testCaseDidFinish(_ testCase: XCTestCase) {
