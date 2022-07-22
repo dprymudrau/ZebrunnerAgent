@@ -8,7 +8,7 @@
 import Foundation
 import XCTest
 
-public class XCZebrunnerTestCase: XCTestCase {
+open class XCZebrunnerTestCase: XCTestCase {
     //Can be added to the method to display maintainer on Zebrunner
     public var methodMaintainer = ""
 }
