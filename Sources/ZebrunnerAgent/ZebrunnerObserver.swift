@@ -54,11 +54,20 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testCase(_ testCase: XCTestCase, didRecord expectedFailure: XCTExpectedFailure) {
-        print(expectedFailure)
+        if let reason = expectedFailure.issue.detailedDescription {
+            zebrunnerClient.finishTest(result: "FAILED", reason: reason, name: testCase.name)
+        }
+        zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
     }
     
     public func testCaseDidFinish(_ testCase: XCTestCase) {
-        zebrunnerClient.finishTest(result: "PASSED", name: testCase.name)
+        
+        let result = testCase.testRun!.hasSucceeded
+        if result {
+            zebrunnerClient.finishTest(result: "PASSED", name: testCase.name)
+        } else {
+            zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
+        }
     }
     
     public func testSuiteDidFinish(_ testSuite: XCTestSuite) {
