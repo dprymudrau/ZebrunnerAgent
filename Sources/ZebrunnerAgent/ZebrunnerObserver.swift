@@ -78,17 +78,19 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testCaseDidFinish(_ testCase: XCTestCase) {
-        if let tc = testCase as? XCZebrunnerTestCase,
-           !tc.methodMaintainer.isEmpty {
-            let testData = TestData(name: tc.name,
-                                    className: getTestSuiteName(for: tc),
-                                    methodName: tc.name,
-                                    maintainer: tc.methodMaintainer)
-            zebrunnerClient.updateTest(testData: testData)
+        if testCase.testRun!.hasSucceeded {
+            if let tc = testCase as? XCZebrunnerTestCase,
+               !tc.methodMaintainer.isEmpty {
+                let testData = TestData(name: tc.name,
+                                        className: getTestSuiteName(for: tc),
+                                        methodName: tc.name,
+                                        maintainer: tc.methodMaintainer)
+                zebrunnerClient.updateTest(testData: testData)
+            }
+            zebrunnerClient.finishTest(result: "PASSED",
+                                       name: testCase.name,
+                                       endTime: Date().toString())
         }
-        zebrunnerClient.finishTest(result: "PASSED",
-                                   name: testCase.name,
-                                   endTime: Date().toString())
     }
     
     public func testSuiteDidFinish(_ testSuite: XCTestSuite) {
