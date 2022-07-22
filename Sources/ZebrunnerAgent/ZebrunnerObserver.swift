@@ -53,24 +53,21 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
     }
     
-    public func testCase(_ testCase: XCTestCase, didRecord expectedFailure: XCTExpectedFailure) {
-        if let reason = expectedFailure.issue.detailedDescription {
-            zebrunnerClient.finishTest(result: "FAILED", reason: reason, name: testCase.name)
-        }
-        zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
-    }
-    
     public func testCaseDidFinish(_ testCase: XCTestCase) {
         
-        let result = testCase.testRun!.hasSucceeded
-        if result {
+        let isSucceed = testCase.testRun!.hasSucceeded
+        let isSkipped = testCase.testRun!.hasBeenSkipped
+        if isSucceed {
             zebrunnerClient.finishTest(result: "PASSED", name: testCase.name)
+        } else if isSkipped {
+            zebrunnerClient.finishTest(result: "SKIPPED", name: testCase.name)
         } else {
             zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
         }
     }
     
     public func testSuiteDidFinish(_ testSuite: XCTestSuite) {
+        testSuiteDictionary.removeValue(forKey: testSuite.name)
     }
     
     public func testBundleDidFinish(_ testBundle: Bundle) {
