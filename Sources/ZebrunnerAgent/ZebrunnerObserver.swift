@@ -28,7 +28,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testBundleWillStart(_ testBundle: Bundle) {
-        print(testBundle)
+        zebrunnerClient.startTestRun(testRunName: testBundle.className)
     }
     
     public func testSuiteWillStart(_ testSuite: XCTestSuite) {
@@ -54,6 +54,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testBundleDidFinish(_ testBundle: Bundle) {
+        zebrunnerClient.finishTestRun()
     }
     
 }
