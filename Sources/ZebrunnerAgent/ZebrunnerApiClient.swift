@@ -6,11 +6,10 @@
 //
 
 import Foundation
+import XCTest
 
-@available(iOS 10.0, *)
-@available(macOS 10.12, *)
 public class ZebrunnerApiClient {
-    private static var client: ZebrunnerApiClient!
+    public static var shared: ZebrunnerApiClient?
     private var requestMgr: RequestManager!
     private var projectKey = ""
     private var testRunResponse: TestRunResponse?
@@ -25,10 +24,10 @@ public class ZebrunnerApiClient {
     }
     
     public static func shared(baseUrl: String, projectKey: String, refreshToken: String) -> ZebrunnerApiClient? {
-        if(self.client == nil) {
-            self.client = ZebrunnerApiClient(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+        if(self.shared == nil) {
+            self.shared = ZebrunnerApiClient(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
         }
-        return client
+        return shared
     }
     
     /// Send authentication request to get authToken for future requests
@@ -144,7 +143,18 @@ public class ZebrunnerApiClient {
         let request = requestMgr.buildUpdateTestRequest(testRunId: id, testId: self.testCasesExecuted[testData.name]!, testData: testData)
         _ = URLSession.shared.syncRequest(with: request)
     }
-
+    
+    public func sendScreenshot(_ testCase: XCTestCase, screenshot: Data?) {
+        guard let id = testRunResponse?.id else {
+            print("There is no test run id found \(String(describing: testRunResponse))")
+            return
+        }
+        let request = requestMgr.buildScreenshotRequest(testRunId: id,
+                                                        testId: self.testCasesExecuted[testCase.name]!,
+                                                        screenshot: screenshot)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
 }
 
 // Extension of URLSesssion to execute synchronous requests.

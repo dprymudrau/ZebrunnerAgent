@@ -11,4 +11,8 @@ import XCTest
 open class XCZebrunnerTestCase: XCTestCase {
     //Can be added to the method to display maintainer on Zebrunner
     public var methodMaintainer = ""
+    
+    public func attachScreenshot(screenshot: XCUIScreenshot) {
+        ZebrunnerApiClient.shared?.sendScreenshot(self, screenshot: screenshot.pngRepresentation)
+    }
 }

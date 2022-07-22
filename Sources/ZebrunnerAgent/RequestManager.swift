@@ -7,16 +7,15 @@
 
 import Foundation
 
-@available(iOS 10.0, *)
-@available(macOS 10.12, *)
 class RequestManager {
     private var baseUrl: String!
     private var refreshToken: String!
     private var authToken: String?
     
     private let contentTypeHeaderName = "Content-Type"
-    private let jsonHeadrValue = "application/json"
     private let authorizationHeaderName = "Authorization"
+    private let jsonHeadrValue = "application/json"
+    private let imageHeaderValue = "image/png"
     
     public init(baseUrl: String, refreshToken: String) {
         self.baseUrl = baseUrl
@@ -48,7 +47,7 @@ class RequestManager {
             request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
         }
         request.httpMethod = "POST"
-        print("started at \(ISO8601DateFormatter().string(from: Date()))")
+        print("started at \(startTime)")
         let body: [String: AnyHashable] = [
             "name": testRunName,
             "startedAt": startTime,
@@ -141,6 +140,18 @@ class RequestManager {
             "maintainer": testData.maintainer,
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
+        return request
+    }
+    
+    public func buildScreenshotRequest(testRunId: Int, testId: Int, screenshot: Data?) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)/screenshots")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(imageHeaderValue, forHTTPHeaderField: contentTypeHeaderName)
+        if let token = authToken {
+            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
+        }
+        request.httpBody = screenshot
         return request
     }
 }
