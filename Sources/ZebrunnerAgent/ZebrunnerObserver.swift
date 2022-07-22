@@ -8,6 +8,7 @@
 import Foundation
 import XCTest
 
+@available(iOS 10.0, *)
 @available(macOS 10.12, *)
 public class ZebrunnerObserver: NSObject, XCTestObservation {
     
@@ -53,7 +54,6 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testBundleDidFinish(_ testBundle: Bundle) {
-        XCTestObservationCenter.shared.removeTestObserver(self)
     }
     
 }
