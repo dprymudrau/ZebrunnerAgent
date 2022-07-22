@@ -28,7 +28,12 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testBundleWillStart(_ testBundle: Bundle) {
-        zebrunnerClient.startTestRun(testRunName: testBundle.className)
+        guard let testRunName = ProcessInfo.processInfo.environment["TEST_RUN_NAME"],
+              !testRunName.isEmpty else {
+            zebrunnerClient.startTestRun(testRunName: "Test Run")
+            return
+        }
+        zebrunnerClient.startTestRun(testRunName: testRunName)
     }
     
     public func testSuiteWillStart(_ testSuite: XCTestSuite) {
