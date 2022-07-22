@@ -14,6 +14,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     private var zebrunnerClient: ZebrunnerApiClient!
     private static var observer: ZebrunnerObserver!
+    private var testSuiteDictionary: [String: [XCTest]] = [:]
     
     private init(baseUrl: String, projectKey: String, refreshToken: String) {
         super.init()
@@ -37,11 +38,12 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testSuiteWillStart(_ testSuite: XCTestSuite) {
-      
+        testSuiteDictionary[testSuite.name] = testSuite.tests
     }
     
     public func testCaseWillStart(_ testCase: XCTestCase) {
-        zebrunnerClient.startTest(name: testCase.name, className: testCase.className, methodName: testCase.name)
+        let className = getTestSuiteName(for: testCase)
+        zebrunnerClient.startTest(name: testCase.name, className: className, methodName: testCase.name)
     }
     
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
@@ -64,6 +66,16 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     public func testBundleDidFinish(_ testBundle: Bundle) {
         zebrunnerClient.finishTestRun()
+    }
+    
+    private func getTestSuiteName(for testCase: XCTestCase) -> String {
+        for (suiteName, cases) in testSuiteDictionary {
+            for test in cases {
+                if test.name == testCase.name {
+                    return suiteName
+                }
+            }
+        }
     }
     
 }
