@@ -182,7 +182,7 @@ extension URLSession {
         // Check if response status code out of 200s
         if let httpResponse = response as? HTTPURLResponse,
            !(200...299).contains(httpResponse.statusCode) {
-            print("Unexpected response code: \(httpResponse.statusCode)")
+            print("Unexpected response code: \(httpResponse.statusCode) for request with url: \(String(describing: request.url))")
             if let data = data,
                let err = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                 print("Data: \(err)")
