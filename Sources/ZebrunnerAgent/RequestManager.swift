@@ -73,7 +73,7 @@ class RequestManager {
         return request
     }
     
-    public func buildStartTestRequest(testRunId: Int, name: String, className: String, methodName: String) -> URLRequest {
+    public func buildStartTestRequest(testRunId: Int, name: String, className: String, methodName: String, maintainer: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -85,7 +85,8 @@ class RequestManager {
             "name": name,
             "className": className,
             "methodName": methodName,
-            "startedAt": ISO8601DateFormatter().string(from: Date())
+            "startedAt": ISO8601DateFormatter().string(from: Date()),
+            "maintainer": maintainer,
         ]
         
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)

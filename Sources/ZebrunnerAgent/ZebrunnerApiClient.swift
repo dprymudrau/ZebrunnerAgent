@@ -83,12 +83,16 @@ public class ZebrunnerApiClient {
     ///     - name: test case display name
     ///     - className: test case class/file name
     ///     - methodName: test case method name
-    public func startTest(name: String, className: String, methodName: String) {
+    public func startTest(name: String, className: String, methodName: String, maintainer: String = "anonymous") {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
         }
-        let request = requestMgr.buildStartTestRequest(testRunId: id, name: name, className: className, methodName: methodName)
+        let request = requestMgr.buildStartTestRequest(testRunId: id,
+                                                       name: name,
+                                                       className: className,
+                                                       methodName: methodName,
+                                                       maintainer: maintainer)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         
         guard let data = data else {

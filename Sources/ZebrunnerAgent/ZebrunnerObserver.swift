@@ -43,7 +43,17 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     public func testCaseWillStart(_ testCase: XCTestCase) {
         let className = getTestSuiteName(for: testCase)
-        zebrunnerClient.startTest(name: testCase.name, className: className, methodName: testCase.name)
+        
+        if let tc = testCase as? XCZebrunnerTestCase,
+           !tc.methodMaintainer.isEmpty {
+            zebrunnerClient.startTest(name: testCase.name,
+                                      className: className,
+                                      methodName: testCase.name,
+                                      maintainer: tc.methodMaintainer)
+        }
+        zebrunnerClient.startTest(name: testCase.name,
+                                  className: className,
+                                  methodName: testCase.name)
     }
     
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
@@ -54,7 +64,6 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testCaseDidFinish(_ testCase: XCTestCase) {
-        
         let isSucceed = testCase.testRun!.hasSucceeded
         let isSkipped = testCase.testRun!.hasBeenSkipped
         if isSucceed {
