@@ -7,6 +7,7 @@
 
 import Foundation
 
+@available(iOS 10.0, *)
 @available(macOS 10.12, *)
 public class ZebrunnerApiClient {
     private static var client: ZebrunnerApiClient!
