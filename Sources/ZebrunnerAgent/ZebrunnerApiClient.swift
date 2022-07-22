@@ -54,8 +54,8 @@ public class ZebrunnerApiClient {
     ///  - Parameters:
     ///     - projectKey: name of the project on Zebrunner
     ///     - testRunName: name of test run that will be show on Test Runs page
-    public func startTestRun(testRunName: String) {
-        let request = requestMgr.buildStartTestRunRequest(projectKey: self.projectKey, testRunName: testRunName)
+    public func startTestRun(testRunName: String, startTime: String) {
+        let request = requestMgr.buildStartTestRunRequest(projectKey: self.projectKey, testRunName: testRunName, startTime: startTime)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         
         guard let data = data else {
@@ -69,12 +69,12 @@ public class ZebrunnerApiClient {
     
     
     /// Finishes existing test run on Zebrunner
-    public func finishTestRun() {
+    public func finishTestRun(endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
         }
-        let request = requestMgr.buildFinishTestRunRequest(testRunId: id)
+        let request = requestMgr.buildFinishTestRunRequest(testRunId: id , endTime: endTime)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
@@ -83,18 +83,13 @@ public class ZebrunnerApiClient {
     ///     - name: test case display name
     ///     - className: test case class/file name
     ///     - methodName: test case method name
-    public func startTest(name: String, className: String, methodName: String, maintainer: String = "anonymous") {
+    public func startTest(testData: TestData, startTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
         }
-        let request = requestMgr.buildStartTestRequest(testRunId: id,
-                                                       name: name,
-                                                       className: className,
-                                                       methodName: methodName,
-                                                       maintainer: maintainer)
+        let request = requestMgr.buildStartTestRequest(testRunId: id, testData: testData, startTime: startTime)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
-        
         guard let data = data else {
             print("Failed to create test case execution: \(String(describing: error?.localizedDescription))")
             return
@@ -112,12 +107,16 @@ public class ZebrunnerApiClient {
     ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
     ///     - reason: message somehow explaining the result
     ///     - name: name of test case that shuld be finished
-    public func finishTest(result: String, reason: String, name: String) {
+    public func finishTest(result: String, reason: String, name: String, endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
         }
-        let request = requestMgr.buildFinishTestRequest(testRunId: id, testId: self.testCasesExecuted[name]!, result: result, reason: reason)
+        let request = requestMgr.buildFinishTestRequest(testRunId: id,
+                                                        testId: self.testCasesExecuted[name]!,
+                                                        result: result,
+                                                        reason: reason,
+                                                        endTime: endTime)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
@@ -125,12 +124,24 @@ public class ZebrunnerApiClient {
     ///  - Parameters:
     ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
     ///     - name: name of test case that shuld be finished
-    public func finishTest(result: String, name: String) {
+    public func finishTest(result: String, name: String, endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
         }
-        let request = requestMgr.buildFinishTestRequest(testRunId: id, testId: self.testCasesExecuted[name]!, result: result)
+        let request = requestMgr.buildFinishTestRequest(testRunId: id,
+                                                        testId: self.testCasesExecuted[name]!,
+                                                        result: result,
+                                                        endTime: endTime)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func updateTest(testData: TestData) {
+        guard let id = testRunResponse?.id else {
+            print("There is no test run id found \(String(describing: testRunResponse))")
+            return
+        }
+        let request = requestMgr.buildUpdateTestRequest(testRunId: id, testId: self.testCasesExecuted[testData.name]!, testData: testData)
         _ = URLSession.shared.syncRequest(with: request)
     }
 

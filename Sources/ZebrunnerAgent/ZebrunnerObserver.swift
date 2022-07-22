@@ -31,10 +31,10 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     public func testBundleWillStart(_ testBundle: Bundle) {
         guard let testRunName = ProcessInfo.processInfo.environment["TEST_RUN_NAME"],
               !testRunName.isEmpty else {
-            zebrunnerClient.startTestRun(testRunName: "Test Run")
+            zebrunnerClient.startTestRun(testRunName: "Test Run", startTime: Date().toString())
             return
         }
-        zebrunnerClient.startTestRun(testRunName: testRunName)
+        zebrunnerClient.startTestRun(testRunName: testRunName, startTime: Date().toString())
     }
     
     public func testSuiteWillStart(_ testSuite: XCTestSuite) {
@@ -44,35 +44,51 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     public func testCaseWillStart(_ testCase: XCTestCase) {
         let className = getTestSuiteName(for: testCase)
         
-        if let tc = testCase as? XCZebrunnerTestCase,
-           !tc.methodMaintainer.isEmpty {
-            zebrunnerClient.startTest(name: testCase.name,
-                                      className: className,
-                                      methodName: testCase.name,
-                                      maintainer: tc.methodMaintainer)
-        }
-        zebrunnerClient.startTest(name: testCase.name,
-                                  className: className,
-                                  methodName: testCase.name)
+        let testData = TestData(name: testCase.name,
+                                className: className,
+                                methodName: testCase.name)
+        zebrunnerClient.startTest(testData: testData, startTime: Date().toString())
     }
     
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
-        if let reason = issue.detailedDescription {
-            zebrunnerClient.finishTest(result: "FAILED", reason: reason, name: testCase.name)
+        if let tc = testCase as? XCZebrunnerTestCase,
+           !tc.methodMaintainer.isEmpty {
+            let testData = TestData(name: tc.name,
+                                    className: getTestSuiteName(for: tc),
+                                    methodName: tc.name,
+                                    maintainer: tc.methodMaintainer)
+            zebrunnerClient.updateTest(testData: testData)
         }
-        zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
+        
+        var failureDescription: String
+        if let reason = issue.detailedDescription {
+            failureDescription = reason
+        } else {
+            failureDescription = issue.compactDescription
+        }
+        if !failureDescription.isEmpty {
+            zebrunnerClient.finishTest(result: "FAILED",
+                                       reason: failureDescription,
+                                       name: testCase.name,
+                                       endTime: Date().toString())
+        }
+        zebrunnerClient.finishTest(result: "FAILED",
+                                   name: testCase.name,
+                                   endTime: Date().toString())
     }
     
     public func testCaseDidFinish(_ testCase: XCTestCase) {
-        let isSucceed = testCase.testRun!.hasSucceeded
-        let isSkipped = testCase.testRun!.hasBeenSkipped
-        if isSucceed {
-            zebrunnerClient.finishTest(result: "PASSED", name: testCase.name)
-        } else if isSkipped {
-            zebrunnerClient.finishTest(result: "SKIPPED", name: testCase.name)
-        } else {
-            zebrunnerClient.finishTest(result: "FAILED", name: testCase.name)
+        if let tc = testCase as? XCZebrunnerTestCase,
+           !tc.methodMaintainer.isEmpty {
+            let testData = TestData(name: tc.name,
+                                    className: getTestSuiteName(for: tc),
+                                    methodName: tc.name,
+                                    maintainer: tc.methodMaintainer)
+            zebrunnerClient.updateTest(testData: testData)
         }
+        zebrunnerClient.finishTest(result: "PASSED",
+                                   name: testCase.name,
+                                   endTime: Date().toString())
     }
     
     public func testSuiteDidFinish(_ testSuite: XCTestSuite) {
@@ -80,7 +96,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     public func testBundleDidFinish(_ testBundle: Bundle) {
-        zebrunnerClient.finishTestRun()
+        zebrunnerClient.finishTestRun(endTime: Date().toString())
     }
     
     private func getTestSuiteName(for testCase: XCTestCase) -> String {
@@ -94,4 +110,12 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         return "Unreconized"
     }
     
+}
+
+extension Date {
+    func toString(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ") -> String{
+        let df = DateFormatter()
+        df.dateFormat = format
+        return df.string(from: self)
+    }
 }
