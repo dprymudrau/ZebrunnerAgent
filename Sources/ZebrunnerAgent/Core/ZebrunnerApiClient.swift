@@ -165,6 +165,21 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    public func sendLogs(logs: [[String: AnyHashable]]) {
+        guard let id = testRunResponse?.id else {
+            print("There is no test run id found \(String(describing: testRunResponse))")
+            return
+        }
+        let request = requestMgr.buildLogsRequest(testRunId: id, logs: logs)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func getTestCaseId(for testCaseName: String) -> Int {
+        guard let id = self.testCasesExecuted[testCaseName] else {
+            return 0
+        }
+        return id
+    }
 }
 
 // Extension of URLSesssion to execute synchronous requests.

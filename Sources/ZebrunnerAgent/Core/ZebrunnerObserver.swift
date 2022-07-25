@@ -8,11 +8,13 @@
 import Foundation
 import XCTest
 
+@available(macOS 10.12, *)
 public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     private var zebrunnerClient: ZebrunnerApiClient!
     private static var observer: ZebrunnerObserver!
     private var testSuiteDictionary: [String: [XCTest]] = [:]
+    private var logger: ZebrunnerLogging?
     
     private init(baseUrl: String, projectKey: String, refreshToken: String) {
         super.init()
@@ -54,6 +56,13 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseWillStart(_ testCase: XCTestCase) {
+        if let tc = testCase as? XCZebrunnerTestCase {
+            if tc.enableLogging {
+                logger = ZebrunnerLogging.setUp(testCaseName: testCase.name)
+                logger!.startLogsSending()
+            }
+        }
+        
         let className = getTestSuiteName(for: testCase)
         
         let testData = TestData(name: testCase.name,
@@ -67,6 +76,9 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///    - testCase: object of XCTestCase with data about executed test case
     ///    - issue: contains data about issue that is cause of fail
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
+        if let logger = self.logger {
+            logger.stopLogsSending()
+        }
         updateMaintainer(testCase)
         var failureDescription: String
         if let reason = issue.detailedDescription {
@@ -90,6 +102,9 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseDidFinish(_ testCase: XCTestCase) {
+        if let logger = self.logger {
+            logger.stopLogsSending()
+        }
         updateMaintainer(testCase)
         if testCase.testRun!.hasSucceeded {
             

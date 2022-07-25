@@ -108,6 +108,11 @@ class RequestManager {
         return prepareRequest(url: url, method: .POST, body: screenshot!, contentType: .image)
     }
     
+    public func buildLogsRequest(testRunId: Int, logs: [[String: AnyHashable]]) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/logs")!
+        return prepareRequest(url: url, method: HttpMethod.POST, body: logs)
+    }
+    
     private func prepareRequest(url: URL, method: HttpMethod, body: Any, contentType: ContentType = .json) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
