@@ -51,8 +51,8 @@ public class ZebrunnerApiClient {
     
     /// Creates new test run on Zebrunner
     ///  - Parameters:
-    ///     - projectKey: name of the project on Zebrunner
     ///     - testRunName: name of test run that will be show on Test Runs page
+    ///     - startTime: ISO8601 timestamp with an offset from UTC of test run
     public func startTestRun(testRunName: String, startTime: String) {
         let request = requestMgr.buildStartTestRunRequest(projectKey: self.projectKey, testRunName: testRunName, startTime: startTime)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
@@ -68,6 +68,8 @@ public class ZebrunnerApiClient {
     
     
     /// Finishes existing test run on Zebrunner
+    ///  - Parameters:
+    ///   - endTime: ISO8601 timestamp with an offset from UTC of test run finish
     public func finishTestRun(endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
@@ -79,9 +81,8 @@ public class ZebrunnerApiClient {
     
     /// Starts test case execution in given test run on Zebrunner
     ///  - Parameters:
-    ///     - name: test case display name
-    ///     - className: test case class/file name
-    ///     - methodName: test case method name
+    ///     - testData: data about executed test contains test case name, class name, method maintainer
+    ///     - startTime: ISO8601 timestamp with an offset from UTC of test execution start
     public func startTest(testData: TestData, startTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
@@ -106,6 +107,7 @@ public class ZebrunnerApiClient {
     ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
     ///     - reason: message somehow explaining the result
     ///     - name: name of test case that shuld be finished
+    ///     - endTime: ISO8601 timestamp with an offset from UTC of test execution finish
     public func finishTest(result: String, reason: String, name: String, endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
@@ -123,6 +125,7 @@ public class ZebrunnerApiClient {
     ///  - Parameters:
     ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
     ///     - name: name of test case that shuld be finished
+    ///     - endTime: ISO8601 timestamp with an offset from UTC of test execution finish
     public func finishTest(result: String, name: String, endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
@@ -135,6 +138,9 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    /// Updates test case data
+    ///  - Parameters:
+    ///   - testData: data about executed test contains test case name, class name, method maintainer
     public func updateTest(testData: TestData) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
@@ -144,6 +150,10 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    /// Attaches screenshot for given test case
+    ///  - Parameters:
+    ///     - testCase: object of executed test case
+    ///     - screenshot: png representation of screenshot
     public func sendScreenshot(_ testCase: XCTestCase, screenshot: Data?) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")

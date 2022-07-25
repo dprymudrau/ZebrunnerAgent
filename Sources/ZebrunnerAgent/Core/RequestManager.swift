@@ -14,8 +14,16 @@ class RequestManager {
     
     private let contentTypeHeaderName = "Content-Type"
     private let authorizationHeaderName = "Authorization"
-    private let jsonHeadrValue = "application/json"
-    private let imageHeaderValue = "image/png"
+    
+    private enum HttpMethod: String {
+        case POST = "POST"
+        case PUT = "PUT"
+    }
+    
+    private enum ContentType: String {
+        case image = "image/png"
+        case json = "application/json"
+    }
     
     public init(baseUrl: String, refreshToken: String) {
         self.baseUrl = baseUrl
@@ -26,60 +34,34 @@ class RequestManager {
         self.authToken = authToken
     }
     
-    
     public func buildAuthRequest() -> URLRequest {
         let url = URL(string: baseUrl + "/api/iam/v1/auth/refresh")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
         let body: [String: AnyHashable] = [
             "refreshToken": refreshToken
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .POST, body: body)
     }
     
     public func buildStartTestRunRequest(projectKey: String, testRunName: String, startTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs?projectKey=" + projectKey)!
-        var request = URLRequest(url: url)
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
-        if let token = authToken {
-            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
-        }
-        request.httpMethod = "POST"
-        print("started at \(startTime)")
         let body: [String: AnyHashable] = [
             "name": testRunName,
             "startedAt": startTime,
             "framework": "XCTest",
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .POST, body: body)
     }
     
     public func buildFinishTestRunRequest(testRunId: Int, endTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/" + String(testRunId))!
-        var request = URLRequest(url: url)
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
-        if let token = authToken {
-            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
-        }
-        request.httpMethod = "PUT"
         let body: [String: AnyHashable] = [
             "endedAt": endTime
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .PUT, body: body)
     }
     
     public func buildStartTestRequest(testRunId: Int, testData: TestData, startTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
-        if let token = authToken {
-            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
-        }
         let body = [
             "name": testData.name,
             "className": testData.className,
@@ -88,70 +70,59 @@ class RequestManager {
             "maintainer": testData.maintainer,
         ]
         
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .POST, body: body)
     }
     
     public func buildFinishTestRequest(testRunId: Int, testId: Int, result: String, reason: String, endTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
-        if let token = authToken {
-            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
-        }
         let body: [String: AnyHashable] = [
             "result": result,
             "reason": reason,
             "endedAt": endTime
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .PUT, body: body)
     }
     
     public func buildFinishTestRequest(testRunId: Int, testId: Int, result: String, endTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
-        if let token = authToken {
-            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
-        }
         let body: [String: AnyHashable] = [
             "result": result,
             "endedAt": endTime
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .PUT, body: body)
     }
     
     public func buildUpdateTestRequest(testRunId: Int, testId: Int, testData: TestData) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)?headless=true")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue(jsonHeadrValue, forHTTPHeaderField: contentTypeHeaderName)
-        if let token = authToken {
-            request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
-        }
         let body = [
             "name": testData.name,
             "className": testData.className,
             "methodName": testData.methodName,
             "maintainer": testData.maintainer,
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        return request
+        return prepareRequest(url: url, method: .PUT, body: body)
     }
     
     public func buildScreenshotRequest(testRunId: Int, testId: Int, screenshot: Data?) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)/screenshots")!
+        return prepareRequest(url: url, method: .POST, body: screenshot!, contentType: .image)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: Any, contentType: ContentType = .json) -> URLRequest {
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue(imageHeaderValue, forHTTPHeaderField: contentTypeHeaderName)
+        request.httpMethod = method.rawValue
+        request.setValue(contentType.rawValue, forHTTPHeaderField: contentTypeHeaderName)
         if let token = authToken {
             request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
         }
-        request.httpBody = screenshot
+        
+        switch contentType {
+        case .json:
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body as! [String: String], options: .prettyPrinted)
+        case .image:
+            request.httpBody = body as! Data?
+        }
+        
         return request
     }
 }
