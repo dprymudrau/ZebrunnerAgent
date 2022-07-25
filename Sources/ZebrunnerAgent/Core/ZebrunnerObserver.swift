@@ -49,7 +49,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     public func testSuiteWillStart(_ testSuite: XCTestSuite) {
         testSuiteDictionary[testSuite.name] = testSuite.tests
     }
-     
+    
     /// Executed before Test Case started used to register test executin start on Zebrunner
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
@@ -143,7 +143,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
             }
         }
     }
-        
+    
 }
 
 /// Extension needed for getting Date in ISO8601 timestamp with an offset from UTC
