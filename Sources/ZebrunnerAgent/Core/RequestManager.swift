@@ -112,12 +112,12 @@ class RequestManager {
     
     public func buildTestCaseArtifactsRequest(testRunId: Int, testCaseId: Int, artifact: Data?) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/artifacts")!
-        return prepareRequest(url: url, method: .POST, body: artifact, contentType: .any)
+        return prepareRequest(url: url, method: .POST, body: artifact, contentType: .multipart)
     }
     
     public func buildTestRunArtifactsRequest(testRunId: Int, artifact: Data?) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/artifacts")!
-        return prepareRequest(url: url, method: HttpMethod.POST, body: artifact, contentType: .any)
+        return prepareRequest(url: url, method: HttpMethod.POST, body: artifact, contentType: .multipart)
     }
     
     public func buildTestCaseArtifactReferencesRequest(testRunId: Int, testCaseId: Int, references: [String: String]) -> URLRequest {
@@ -181,8 +181,9 @@ class RequestManager {
         if contentType == .multipart {
             let boundary = UUID().uuidString
             request.setValue(contentType.rawValue + boundary, forHTTPHeaderField: contentTypeHeaderName)
+        } else {
+            request.setValue(contentType.rawValue, forHTTPHeaderField: contentTypeHeaderName)
         }
-        request.setValue(contentType.rawValue, forHTTPHeaderField: contentTypeHeaderName)
         if let token = authToken {
             request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
         }
