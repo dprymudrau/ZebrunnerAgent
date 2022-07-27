@@ -13,18 +13,18 @@ public class Artifact {
     
     public static func attachArtifactToTestCase(testCase: XCTestCase, artifact: Data?) {
         let testCaseName = testCase.name
-        attachArtifactToTestCase(testCaseName, artifact: artifact)
+        attachArtifactToTestCase(testCase: testCaseName, artifact: artifact)
     }
     
     public static func attachArtifactToTestCase(testCase: XCTestCase, artifact: [UInt8]) {
         let testCaseName = testCase.name
         let data = Data(artifact)
-        attachArtifactToTestCase(testCaseName, artifact: data)
+        attachArtifactToTestCase(testCase: testCaseName, artifact: data)
     }
     
     public static func attachArtifactToTestCase(testCase: String, artifact: [UInt8]) {
         let data = Data(artifact)
-        attachArtifactToTestCase(testCase, artifact: data)
+        attachArtifactToTestCase(testCase: testCase, artifact: data)
     }
     
     public static func attachArtifactToTestCase(testCase: String, artifact: Data?) {
@@ -34,17 +34,17 @@ public class Artifact {
     public static func attachArtifactReferenceToTestCase(testCase: XCTestCase, key: String, value: String) {
         let references = [[key: value]]
         let testCaseName = testCase.name
-        attachArtifactReferencesToTestCase(testCaseName, references: references)
+        attachArtifactReferencesToTestCase(testCase: testCaseName, references: references)
     }
     
     public static func attachArtifactReferenceToTestCase(testCase: XCTestCase, references: [[String: String]]) {
         let testCaseName = testCase.name
-        attachArtifactReferencesToTestCase(testCaseName, references: references)
+        attachArtifactReferencesToTestCase(testCase: testCaseName, references: references)
     }
     
     public static func attachArtifactReferenceToTestCase(testCase: String, key: String, value: String) {
         let references = [[key: value]]
-        attachArtifactReferencesToTestCase(testCase, references: references)
+        attachArtifactReferencesToTestCase(testCase: testCase, references: references)
     }
     
     public static func attachArtifactReferencesToTestCase(testCase: String, references: [[String: String]]) {

@@ -21,16 +21,16 @@ public class Label {
     }
     
     public func attachTestCaseLabel(testCase: XCTestCase, key: String, value: String) {
-        attachTestCaseLabel(testCase.name, key: key, value: value)
+        attachTestCaseLabel(testCase: testCase.name, key: key, value: value)
     }
     
     public func attachTestCaseLabel(testCase: String, key: String, value: String) {
         let labels = [[key: value]]
-        attachTestCaseLabels(testCase, labels: labels)
+        attachTestCaseLabels(testCase: testCase, labels: labels)
     }
     
     public func attachTestCaseLabels(testCase: XCTestCase, labels: [[String: String]]) {
-        attachTestCaseLabels(testCase.name, labels: labels)
+        attachTestCaseLabels(testCase: testCase.name, labels: labels)
     }
     
     public func attachTestCaseLabels(testCase: String, labels: [[String: String]]) {
