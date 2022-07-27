@@ -210,14 +210,14 @@ class RequestManager {
                     body += "\r\n\r\n\(paramValue)\r\n"
                 } else {
                     let paramSrc = param["src"] as! Data
-                    var fileContent = ""
-                    if let content = String(data: paramSrc, encoding: .utf8) {
-                        fileContent = content
-                    } else {
-                        fileContent = paramSrc.base64EncodedString(options: .lineLength64Characters)
-                    }
+//                    var fileContent = ""
+//                    if let content = String(data: paramSrc, encoding: .utf8) {
+//                        fileContent = content
+//                    } else {
+//                        fileContent = paramSrc.base64EncodedString(options: .lineLength64Characters)
+//                    }
                     body += "; filename=\"\(name)\"\r\n"
-                    + "Content-Type: \"content-type header\"\r\n\r\n\(fileContent)\r\n"
+                    + "Content-Type: \"content-type header\"\r\n\r\n\(paramSrc)\r\n"
                 }
             }
         }
