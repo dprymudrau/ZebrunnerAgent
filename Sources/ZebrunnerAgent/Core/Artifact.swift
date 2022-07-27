@@ -11,43 +11,43 @@ import XCTest
 public class Artifact {
     private init() {}
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: Data?) {
+    public static func attachArtifactToTestCase(testCase: XCTestCase, artifact: Data?) {
         let testCaseName = testCase.name
         attachArtifactToTestCase(testCaseName, artifact: artifact)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: [UInt8]) {
+    public static func attachArtifactToTestCase(testCase: XCTestCase, artifact: [UInt8]) {
         let testCaseName = testCase.name
         let data = Data(artifact)
         attachArtifactToTestCase(testCaseName, artifact: data)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: [UInt8]) {
+    public static func attachArtifactToTestCase(testCase: String, artifact: [UInt8]) {
         let data = Data(artifact)
         attachArtifactToTestCase(testCase, artifact: data)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: Data?) {
+    public static func attachArtifactToTestCase(testCase: String, artifact: Data?) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase, with: artifact)
     }
     
-    public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, key: String, value: String) {
+    public static func attachArtifactReferenceToTestCase(testCase: XCTestCase, key: String, value: String) {
         let references = [[key: value]]
         let testCaseName = testCase.name
         attachArtifactReferencesToTestCase(testCaseName, references: references)
     }
     
-    public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, references: [[String: String]]) {
+    public static func attachArtifactReferenceToTestCase(testCase: XCTestCase, references: [[String: String]]) {
         let testCaseName = testCase.name
         attachArtifactReferencesToTestCase(testCaseName, references: references)
     }
     
-    public static func attachArtifactReferenceToTestCase(_ testCase: String, key: String, value: String) {
+    public static func attachArtifactReferenceToTestCase(testCase: String, key: String, value: String) {
         let references = [[key: value]]
         attachArtifactReferencesToTestCase(testCase, references: references)
     }
     
-    public static func attachArtifactReferencesToTestCase(_ testCase: String, references: [[String: String]]) {
+    public static func attachArtifactReferencesToTestCase(testCase: String, references: [[String: String]]) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifactReference(testCase: testCase, references: references)
     }
     
