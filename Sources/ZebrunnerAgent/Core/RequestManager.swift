@@ -119,40 +119,53 @@ class RequestManager {
         return prepareRequest(url: url, method: HttpMethod.POST, body: artifact, contentType: .any)
     }
     
-    public func buildTestCaseArtifactReferencesRequest(testRunId: Int, testCaseId: Int, references: [[String: String]]) -> URLRequest {
+    public func buildTestCaseArtifactReferencesRequest(testRunId: Int, testCaseId: Int, references: [String: String]) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/artifact-references")!
-        let body = [
-            "items" : references
-        ]
+        let body = getBodyForArtifacts(keyValues: references)
         return prepareRequest(url: url, method: HttpMethod.PUT, body: body)
     }
     
-    public func buildTestRunArtifactReferencesRequest(testRunId: Int, references: [[String: String]]) -> URLRequest {
+    public func buildTestRunArtifactReferencesRequest(testRunId: Int, references: [String: String]) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/artifact-references")!
-        let body = [
-            "items" : references
-        ]
+        let body = getBodyForArtifacts(keyValues: references)
         return prepareRequest(url: url, method: HttpMethod.PUT, body: body)
     }
     
-    public func buildTestRunLabelsRequest(testRunId: Int, labels: [[String: String]]) -> URLRequest {
+    public func buildTestRunLabelsRequest(testRunId: Int, labels: [String: String]) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/labels")!
-        let body = [
-            "items": labels
-        ]
+        let body = getBodyForLabels(keyValues: labels)
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    public func buildTestCaseLabelsRequest(testRunId: Int, testCaseId: Int, labels: [[String: String]]) -> URLRequest {
+    public func buildTestCaseLabelsRequest(testRunId: Int, testCaseId: Int, labels: [String: String]) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/labels")!
-        let body = [
-            "items": labels
-        ]
+        let body = getBodyForLabels(keyValues: labels)
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    private func prepareRequest(url: URL, method: HttpMethod, body: [String: [[String: String]]]) -> URLRequest {
-        let jsonBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
+    private func getBodyForLabels(keyValues: [String: String]) -> AttachementLabelDTO {
+        var labels = [LabelDTO]()
+        for (key, value) in keyValues {
+            labels.append(LabelDTO(key: key, value: value))
+        }
+        return AttachementLabelDTO(items: labels)
+    }
+    
+    private func getBodyForArtifacts(keyValues: [String: String]) -> AttachementArtifactDTO {
+        var artifacts = [ArtifactDTO]()
+        for (name, value) in keyValues {
+            artifacts.append(ArtifactDTO(name: name, value: value))
+        }
+        return AttachementArtifactDTO(items: artifacts)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: AttachementLabelDTO) -> URLRequest {
+        let jsonBody = try? JSONEncoder().encode(body)
+        return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: AttachementArtifactDTO) -> URLRequest {
+        let jsonBody = try? JSONEncoder().encode(body)
         return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
     }
     

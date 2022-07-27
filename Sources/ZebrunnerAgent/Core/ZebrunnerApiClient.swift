@@ -186,7 +186,7 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseArtifactReference(testCase: String, references: [[String: String]]) {
+    public func sendTestCaseArtifactReference(testCase: String, references: [String: String]) {
         guard let testCaseId = testCasesExecuted[testCase] else {
             print("There is no test case in current run executed \(String(describing: testRunResponse))")
             return
@@ -198,12 +198,12 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestRunArtifactReferences(references: [[String: String]]) {
+    public func sendTestRunArtifactReferences(references: [String: String]) {
         let request = requestMgr.buildTestRunArtifactReferencesRequest(testRunId: getTestRunId(), references: references)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestRunLabels(_ labels: [[String: String]]) {
+    public func sendTestRunLabels(_ labels: [String: String]) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
@@ -213,7 +213,7 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseLabels(for testCase: String, labels: [[String: String]]) {
+    public func sendTestCaseLabels(for testCase: String, labels: [String: String]) {
         guard let testCaseId = testCasesExecuted[testCase] else {
             print("Cannot find \(testCase) in executed tests scope")
             return

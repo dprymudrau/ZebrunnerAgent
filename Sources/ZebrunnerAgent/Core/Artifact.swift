@@ -32,22 +32,22 @@ public class Artifact {
     }
     
     public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, key: String, value: String) {
-        let references = [[key: value]]
+        let references = [key: value]
         let testCaseName = testCase.name
         attachArtifactReferencesToTestCase(testCaseName, references: references)
     }
     
-    public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, references: [[String: String]]) {
+    public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, references: [String: String]) {
         let testCaseName = testCase.name
         attachArtifactReferencesToTestCase(testCaseName, references: references)
     }
     
     public static func attachArtifactReferenceToTestCase(_ testCase: String, key: String, value: String) {
-        let references = [[key: value]]
+        let references = [key: value]
         attachArtifactReferencesToTestCase(testCase, references: references)
     }
     
-    public static func attachArtifactReferencesToTestCase(_ testCase: String, references: [[String: String]]) {
+    public static func attachArtifactReferencesToTestCase(_ testCase: String, references: [String: String]) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifactReference(testCase: testCase, references: references)
     }
     
@@ -61,11 +61,11 @@ public class Artifact {
     }
     
     public static func attachArtifactReferenceToTestRun(key: String, value: String) {
-        let references = [[key: value]]
+        let references = [key: value]
         attachArtifactReferenceToTestRun(references: references)
     }
     
-    public static func attachArtifactReferenceToTestRun(references: [[String: String]]) {
+    public static func attachArtifactReferenceToTestRun(references: [String: String]) {
         try? ZebrunnerApiClient.getInstance().sendTestRunArtifactReferences(references: references)
     }
     
