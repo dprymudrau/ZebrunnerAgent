@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import AppKit
 
 class RequestManager {
     private var baseUrl: String!
