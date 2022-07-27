@@ -110,14 +110,14 @@ class RequestManager {
         return prepareRequest(url: url, method: .POST, body: screenshot!, contentType: .image)
     }
     
-    public func buildTestCaseArtifactsRequest(testRunId: Int, testCaseId: Int, artifact: Data, name: String, mimeType: String) -> URLRequest {
+    public func buildTestCaseArtifactsRequest(testRunId: Int, testCaseId: Int, artifact: Data, mimeType: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/artifacts")!
-        return prepareMultipartRequest(url: url, file: artifact, fileName: name, mimeType: mimeType)
+        return prepareMultipartRequest(url: url, file: artifact, mimeType: mimeType)
     }
     
     public func buildTestRunArtifactsRequest(testRunId: Int, artifact: Data, name: String, mimeType: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/artifacts")!
-        return prepareMultipartRequest(url: url, file: artifact, fileName: name, mimeType: mimeType)
+        return prepareMultipartRequest(url: url, file: artifact, mimeType: mimeType)
     }
     
     public func buildTestCaseArtifactReferencesRequest(testRunId: Int, testCaseId: Int, references: [String: String]) -> URLRequest {
@@ -186,9 +186,9 @@ class RequestManager {
         return request
     }
     
-    private func prepareMultipartRequest(url: URL, file: Data, fileName: String, mimeType: String, method: HttpMethod = .POST) -> URLRequest {
+    private func prepareMultipartRequest(url: URL, file: Data, mimeType: String, method: HttpMethod = .POST) -> URLRequest {
         var multipartRequest = MultipartFormDataRequest(url: url)
-        multipartRequest.addDataField(named: fileName, data: file, mimeType: mimeType)
+        multipartRequest.addDataField(named: "file", data: file, mimeType: mimeType)
         var request = multipartRequest.asURLRequest()
         request.httpMethod = method.rawValue
         return request

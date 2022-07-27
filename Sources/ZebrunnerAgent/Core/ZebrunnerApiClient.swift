@@ -168,7 +168,7 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseArtifact(for testCase: String, with artifact: Data, name: String, mimeType: String) {
+    public func sendTestCaseArtifact(for testCase: String, with artifact: Data, mimeType: String) {
         guard let testCaseId = testCasesExecuted[testCase] else {
             print("There is no test case in current run executed \(String(describing: testRunResponse))")
             return
@@ -177,7 +177,6 @@ public class ZebrunnerApiClient {
         let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: getTestRunId(),
                                                                testCaseId: testCaseId,
                                                                artifact: artifact,
-                                                               name: name,
                                                                mimeType: mimeType)
         
         _ = URLSession.shared.syncRequest(with: request)

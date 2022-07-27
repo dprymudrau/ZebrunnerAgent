@@ -11,24 +11,24 @@ import XCTest
 public class Artifact {
     private init() {}
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: Data, name: String, mimeType: String) {
+    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: Data, mimeType: String) {
         let testCaseName = testCase.name
-        attachArtifactToTestCase(testCaseName, artifact: artifact, name: name, mimeType: mimeType)
+        attachArtifactToTestCase(testCaseName, artifact: artifact, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: [UInt8], name: String, mimeType: String) {
+    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: [UInt8], mimeType: String) {
         let testCaseName = testCase.name
         let data = Data(artifact)
-        attachArtifactToTestCase(testCaseName, artifact: data, name: name, mimeType: mimeType)
+        attachArtifactToTestCase(testCaseName, artifact: data, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: [UInt8], name: String, mimeType: String) {
+    public static func attachArtifactToTestCase(_ testCase: String, artifact: [UInt8], mimeType: String) {
         let data = Data(artifact)
-        attachArtifactToTestCase(testCase, artifact: data, name: name, mimeType: mimeType)
+        attachArtifactToTestCase(testCase, artifact: data, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: Data, name: String, mimeType: String) {
-        try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase, with: artifact, name: name, mimeType: mimeType)
+    public static func attachArtifactToTestCase(_ testCase: String, artifact: Data, mimeType: String) {
+        try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase, with: artifact, mimeType: mimeType)
     }
     
     public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, key: String, value: String) {
