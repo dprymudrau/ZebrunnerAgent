@@ -11,62 +11,58 @@ import XCTest
 public class Artifact {
     private init() {}
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: Data, name: String) {
-        let testCaseName = testCase.name
-        attachArtifactToTestCase(testCaseName, artifact: artifact, name: name)
-    }
-    
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: [UInt8], name: String) {
-        let testCaseName = testCase.name
+    //Artifacts to test case
+    public static func attachToTestCase(_ testCase: String, artifact: [UInt8], name: String) {
         let data = Data(artifact)
-        attachArtifactToTestCase(testCaseName, artifact: data, name: name)
+        attachToTestCase(testCase, artifact: data, name: name)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: [UInt8], name: String) {
-        let data = Data(artifact)
-        attachArtifactToTestCase(testCase, artifact: data, name: name)
+    public static func attachToTestCase(_ testCase: String, artifactPath: String, name: String) {
+        try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase,
+                                                                   with: getFileData(pathToFile: artifactPath),
+                                                                   name: name)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: Data, name: String) {
+    public static func attachToTestCase(_ testCase: String, artifact: Data, name: String) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase, with: artifact, name: name)
     }
     
-    public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, key: String, value: String) {
+    //Artifact References to test case
+    public static func attachReferenceToTestCase(_ testCase: String, key: String, value: String) {
         let references = [key: value]
-        let testCaseName = testCase.name
-        attachArtifactReferencesToTestCase(testCaseName, references: references)
+        attachReferencesToTestCase(testCase, references: references)
     }
     
-    public static func attachArtifactReferencesToTestCase(_ testCase: XCTestCase, references: [String: String]) {
-        let testCaseName = testCase.name
-        attachArtifactReferencesToTestCase(testCaseName, references: references)
-    }
-    
-    public static func attachArtifactReferenceToTestCase(_ testCase: String, key: String, value: String) {
-        let references = [key: value]
-        attachArtifactReferencesToTestCase(testCase, references: references)
-    }
-    
-    public static func attachArtifactReferencesToTestCase(_ testCase: String, references: [String: String]) {
+    public static func attachReferencesToTestCase(_ testCase: String, references: [String: String]) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifactReference(testCase: testCase, references: references)
     }
     
-    public static func attachArtifactToTestRun(artifact: [UInt8], name: String) {
+    //Artifact References to test run
+    public static func attachToTestRun(artifact: [UInt8], name: String) {
         let data = Data(artifact)
-        attachArtifactToTestRun(artifact: data, name: name)
+        attachToTestRun(artifact: data, name: name)
     }
     
-    public static func attachArtifactToTestRun(artifact: Data, name: String) {
+    public static func attachToTestRun(artifactPath: String, name: String) {
+        try? ZebrunnerApiClient.getInstance().sendTestRunArtifact(artifact: getFileData(pathToFile: artifactPath),
+                                                                  name: name)
+    }
+    
+    public static func attachToTestRun(artifact: Data, name: String) {
         try? ZebrunnerApiClient.getInstance().sendTestRunArtifact(artifact: artifact, name: name)
     }
     
-    public static func attachArtifactReferenceToTestRun(key: String, value: String) {
+    //Artifacts to test run
+    public static func attachReferenceToTestRun(key: String, value: String) {
         let references = [key: value]
-        attachArtifactReferenceToTestRun(references: references)
+        attachReferenceToTestRun(references: references)
     }
     
-    public static func attachArtifactReferenceToTestRun(references: [String: String]) {
+    public static func attachReferenceToTestRun(references: [String: String]) {
         try? ZebrunnerApiClient.getInstance().sendTestRunArtifactReferences(references: references)
     }
     
+    private static func getFileData(pathToFile: String) -> Data? {
+        return try? NSData(contentsOfFile:pathToFile, options:[]) as Data
+    }
 }

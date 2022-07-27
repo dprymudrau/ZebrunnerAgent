@@ -168,23 +168,32 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseArtifact(for testCase: String, with artifact: Data, name: String) {
+    public func sendTestCaseArtifact(for testCase: String, with artifact: Data?, name: String) {
         guard let testCaseId = testCasesExecuted[testCase] else {
             print("There is no test case in current run executed \(String(describing: testRunResponse))")
             return
         }
         
+        guard let data = artifact else {
+            print("There is no data to attach")
+            return
+        }
+        
         let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: getTestRunId(),
                                                                testCaseId: testCaseId,
-                                                               artifact: artifact,
+                                                               artifact: data,
                                                                name: name)
         
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestRunArtifact(artifact: Data, name: String) {
+    public func sendTestRunArtifact(artifact: Data?, name: String) {
+        guard let data = artifact else {
+            print("There is no data to attach")
+            return
+        }
         let request = requestMgr.buildTestRunArtifactsRequest(testRunId: getTestRunId(),
-                                                              artifact: artifact,
+                                                              artifact: data,
                                                               name: name)
         _ = URLSession.shared.syncRequest(with: request)
     }
