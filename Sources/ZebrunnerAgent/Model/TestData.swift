@@ -12,4 +12,5 @@ public struct TestData {
     var className: String
     var methodName: String
     var maintainer: String = "anonymous"
+    var id: Int = 0
 }

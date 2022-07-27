@@ -9,7 +9,7 @@ import Foundation
 import XCTest
 
 public class ZebrunnerApiClient {
-    public static var shared: ZebrunnerApiClient?
+    private static var instance: ZebrunnerApiClient?
     private var requestMgr: RequestManager!
     private var projectKey = ""
     private var testRunResponse: TestRunResponse?
@@ -23,11 +23,18 @@ public class ZebrunnerApiClient {
         }
     }
     
-    public static func shared(baseUrl: String, projectKey: String, refreshToken: String) -> ZebrunnerApiClient? {
-        if(self.shared == nil) {
-            self.shared = ZebrunnerApiClient(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+    public static func setUp(baseUrl: String, projectKey: String, refreshToken: String) -> ZebrunnerApiClient? {
+        if(self.instance == nil) {
+            self.instance = ZebrunnerApiClient(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
         }
-        return shared
+        return instance
+    }
+    
+    public static func getInstance() throws -> ZebrunnerApiClient {
+        guard let instance = ZebrunnerApiClient.instance else {
+            throw ZebrunnerAgentError(description: "There was no instance of ZebrunnerApiClient created")
+        }
+        return instance
     }
     
     /// Send authentication request to get authToken for future requests
@@ -152,17 +159,78 @@ public class ZebrunnerApiClient {
     
     /// Attaches screenshot for given test case
     ///  - Parameters:
-    ///     - testCase: object of executed test case
+    ///     - testCaseName: name of test case to attach screenshot
     ///     - screenshot: png representation of screenshot
-    public func sendScreenshot(_ testCase: XCTestCase, screenshot: Data?) {
+    public func sendScreenshot(_ testCaseName: String, screenshot: Data?) {
+        let request = requestMgr.buildScreenshotRequest(testRunId: getTestRunId(),
+                                                        testId: self.testCasesExecuted[testCaseName]!,
+                                                        screenshot: screenshot)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func sendTestCaseArtifact(for testCase: String, with artifact: Data?) {
+        guard let testCaseId = testCasesExecuted[testCase] else {
+            print("There is no test case in current run executed \(String(describing: testRunResponse))")
+            return
+        }
+        
+        let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: getTestRunId(),
+                                                               testCaseId: testCaseId,
+                                                               artifact: artifact)
+        
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func sendTestRunArtifact(artifact: Data?) {
+        let request = requestMgr.buildTestRunArtifactsRequest(testRunId: getTestRunId(), artifact: artifact)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func sendTestCaseArtifactReference(testCase: String, references: [[String: String]]) {
+        guard let testCaseId = testCasesExecuted[testCase] else {
+            print("There is no test case in current run executed \(String(describing: testRunResponse))")
+            return
+        }
+        
+        let request = requestMgr.buildTestCaseArtifactReferencesRequest(testRunId: getTestRunId(),
+                                                                        testCaseId: testCaseId,
+                                                                        references: references)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func sendTestRunArtifactReferences(references: [[String: String]]) {
+        let request = requestMgr.buildTestRunArtifactReferencesRequest(testRunId: getTestRunId(), references: references)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func sendTestRunLabels(_ labels: [[String: String]]) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
         }
-        let request = requestMgr.buildScreenshotRequest(testRunId: id,
-                                                        testId: self.testCasesExecuted[testCase.name]!,
-                                                        screenshot: screenshot)
+        
+        let request = requestMgr.buildTestRunLabelsRequest(testRunId: id, labels: labels)
         _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func sendTestCaseLabels(for testCase: String, labels: [[String: String]]) {
+        guard let testCaseId = testCasesExecuted[testCase] else {
+            print("Cannot find \(testCase) in executed tests scope")
+            return
+        }
+        let request = requestMgr.buildTestCaseLabelsRequest(testRunId: getTestRunId(),
+                                                            testCaseId: testCaseId,
+                                                            labels: labels
+        )
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    public func getTestRunId() -> Int {
+        guard let id = testRunResponse?.id else {
+            print("There is no test run id or test case id found \(String(describing: testRunResponse))")
+            return 0
+        }
+        return id
     }
     
 }
@@ -202,6 +270,3 @@ extension URLSession {
         return (data, response, error)
     }
 }
-
-
-

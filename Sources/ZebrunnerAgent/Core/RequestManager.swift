@@ -23,6 +23,7 @@ class RequestManager {
     private enum ContentType: String {
         case image = "image/png"
         case json = "application/json"
+        case any = "*/*"
     }
     
     public init(baseUrl: String, refreshToken: String) {
@@ -108,7 +109,49 @@ class RequestManager {
         return prepareRequest(url: url, method: .POST, body: screenshot!, contentType: .image)
     }
     
-    private func prepareRequest(url: URL, method: HttpMethod, body: Any, contentType: ContentType = .json) -> URLRequest {
+    public func buildTestCaseArtifactsRequest(testRunId: Int, testCaseId: Int, artifact: Data?) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/artifacts")!
+        return prepareRequest(url: url, method: .POST, body: artifact, contentType: .any)
+    }
+    
+    public func buildTestRunArtifactsRequest(testRunId: Int, artifact: Data?) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/artifacts")!
+        return prepareRequest(url: url, method: HttpMethod.POST, body: artifact, contentType: .any)
+    }
+    
+    public func buildTestCaseArtifactReferencesRequest(testRunId: Int, testCaseId: Int, references: [[String: String]]) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/artifact-references")!
+        let body = [
+            "items" : references
+        ]
+        return prepareRequest(url: url, method: HttpMethod.PUT, body: body)
+    }
+    
+    public func buildTestRunArtifactReferencesRequest(testRunId: Int, references: [[String: String]]) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/artifact-references")!
+        let body = [
+            "items" : references
+        ]
+        return prepareRequest(url: url, method: HttpMethod.PUT, body: body)
+    }
+    
+    public func buildTestRunLabelsRequest(testRunId: Int, labels: [[String: String]]) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/labels")!
+        let body = [
+            "items": labels
+        ]
+        return prepareRequest(url: url, method: .PUT, body: body)
+    }
+    
+    public func buildTestCaseLabelsRequest(testRunId: Int, testCaseId: Int, labels: [[String: String]]) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/labels")!
+        let body = [
+            "items": labels
+        ]
+        return prepareRequest(url: url, method: .PUT, body: body)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: Any?, contentType: ContentType = .json) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.setValue(contentType.rawValue, forHTTPHeaderField: contentTypeHeaderName)
@@ -120,6 +163,8 @@ class RequestManager {
         case .json:
             request.httpBody = try? JSONSerialization.data(withJSONObject: body as! [String: String], options: .prettyPrinted)
         case .image:
+            request.httpBody = body as! Data?
+        case .any:
             request.httpBody = body as! Data?
         }
         

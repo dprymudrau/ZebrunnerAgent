@@ -16,7 +16,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     private init(baseUrl: String, projectKey: String, refreshToken: String) {
         super.init()
-        self.zebrunnerClient = ZebrunnerApiClient.shared(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+        self.zebrunnerClient = ZebrunnerApiClient.setUp(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
         XCTestObservationCenter.shared.addTestObserver(self)
     }
     
@@ -133,15 +133,11 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///  - Parameters:
     ///     - testCase: object of executed test case
     private func updateMaintainer(_ testCase: XCTestCase) {
-        if let tc = testCase as? XCZebrunnerTestCase {
-            if !tc.methodMaintainer.isEmpty {
-                let testData = TestData(name: tc.name,
-                                        className: getTestSuiteName(for: tc),
-                                        methodName: tc.name,
-                                        maintainer: tc.methodMaintainer)
-                zebrunnerClient.updateTest(testData: testData)
-            }
-        }
+        let testData = TestData(name: testCase.name,
+                                className: getTestSuiteName(for: testCase),
+                                methodName: testCase.name,
+                                maintainer: testCase.methodMaintainer as String)
+        zebrunnerClient.updateTest(testData: testData)
     }
     
 }
