@@ -176,17 +176,14 @@ public class ZebrunnerApiClient {
         
         let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: getTestRunId(),
                                                                testCaseId: testCaseId,
-                                                               artifact: artifact,
-                                                               mimeType: mimeType)
+                                                               artifact: artifact)
         
         _ = URLSession.shared.syncRequest(with: request)
     }
     
     public func sendTestRunArtifact(artifact: Data, name: String, mimeType: String) {
         let request = requestMgr.buildTestRunArtifactsRequest(testRunId: getTestRunId(),
-                                                              artifact: artifact,
-                                                              name: name,
-                                                              mimeType: mimeType)
+                                                              artifact: artifact)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
