@@ -161,7 +161,7 @@ class RequestManager {
         
         switch contentType {
         case .json:
-            request.httpBody = try? JSONSerialization.data(withJSONObject: body as! [String: String], options: .prettyPrinted)
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body as! [String: AnyHashable], options: .prettyPrinted)
         case .image:
             request.httpBody = body as! Data?
         case .any:
