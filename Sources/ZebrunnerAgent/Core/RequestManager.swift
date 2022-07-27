@@ -24,6 +24,7 @@ class RequestManager {
         case image = "image/png"
         case json = "application/json"
         case any = "*/*"
+        case multipart = "multipart/form-data ; boundary="
     }
     
     public init(baseUrl: String, refreshToken: String) {
@@ -177,6 +178,10 @@ class RequestManager {
     private func prepareRequest(url: URL, method: HttpMethod, body: Data?, contentType: ContentType = .json) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
+        if contentType == .multipart {
+            let boundary = UUID().uuidString
+            request.setValue(contentType.rawValue + boundary, forHTTPHeaderField: contentTypeHeaderName)
+        }
         request.setValue(contentType.rawValue, forHTTPHeaderField: contentTypeHeaderName)
         if let token = authToken {
             request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)

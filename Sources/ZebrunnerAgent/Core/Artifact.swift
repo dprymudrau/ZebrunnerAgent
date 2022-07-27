@@ -37,7 +37,7 @@ public class Artifact {
         attachArtifactReferencesToTestCase(testCaseName, references: references)
     }
     
-    public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, references: [String: String]) {
+    public static func attachArtifactReferencesToTestCase(_ testCase: XCTestCase, references: [String: String]) {
         let testCaseName = testCase.name
         attachArtifactReferencesToTestCase(testCaseName, references: references)
     }
