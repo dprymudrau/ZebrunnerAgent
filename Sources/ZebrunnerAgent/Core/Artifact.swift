@@ -11,24 +11,24 @@ import XCTest
 public class Artifact {
     private init() {}
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: Data?) {
+    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: Data, name: String, mimeType: String) {
         let testCaseName = testCase.name
-        attachArtifactToTestCase(testCaseName, artifact: artifact)
+        attachArtifactToTestCase(testCaseName, artifact: artifact, name: name, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: [UInt8]) {
+    public static func attachArtifactToTestCase(_ testCase: XCTestCase, artifact: [UInt8], name: String, mimeType: String) {
         let testCaseName = testCase.name
         let data = Data(artifact)
-        attachArtifactToTestCase(testCaseName, artifact: data)
+        attachArtifactToTestCase(testCaseName, artifact: data, name: name, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: [UInt8]) {
+    public static func attachArtifactToTestCase(_ testCase: String, artifact: [UInt8], name: String, mimeType: String) {
         let data = Data(artifact)
-        attachArtifactToTestCase(testCase, artifact: data)
+        attachArtifactToTestCase(testCase, artifact: data, name: name, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestCase(_ testCase: String, artifact: Data?) {
-        try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase, with: artifact)
+    public static func attachArtifactToTestCase(_ testCase: String, artifact: Data, name: String, mimeType: String) {
+        try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase, with: artifact, name: name, mimeType: mimeType)
     }
     
     public static func attachArtifactReferenceToTestCase(_ testCase: XCTestCase, key: String, value: String) {
@@ -51,13 +51,13 @@ public class Artifact {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifactReference(testCase: testCase, references: references)
     }
     
-    public static func attachArtifactToTestRun(artifact: [UInt8]) {
+    public static func attachArtifactToTestRun(artifact: [UInt8], name: String, mimeType: String) {
         let data = Data(artifact)
-        attachArtifactToTestRun(artifact: data)
+        attachArtifactToTestRun(artifact: data, name: name, mimeType: mimeType)
     }
     
-    public static func attachArtifactToTestRun(artifact: Data?) {
-        try? ZebrunnerApiClient.getInstance().sendTestRunArtifact(artifact: artifact)
+    public static func attachArtifactToTestRun(artifact: Data, name: String, mimeType: String) {
+        try? ZebrunnerApiClient.getInstance().sendTestRunArtifact(artifact: artifact, name: name, mimeType: mimeType)
     }
     
     public static func attachArtifactReferenceToTestRun(key: String, value: String) {
