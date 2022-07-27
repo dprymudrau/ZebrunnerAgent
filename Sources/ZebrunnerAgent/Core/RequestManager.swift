@@ -151,23 +151,24 @@ class RequestManager {
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    private func prepareRequest(url: URL, method: HttpMethod, body: Any?, contentType: ContentType = .json) -> URLRequest {
+    private func prepareRequest(url: URL, method: HttpMethod, body: [String: [[String: String]]]) -> URLRequest {
+        let jsonBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
+        return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: [String: AnyHashable]) -> URLRequest {
+        let jsonBody = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
+        return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: Data?, contentType: ContentType = .json) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.setValue(contentType.rawValue, forHTTPHeaderField: contentTypeHeaderName)
         if let token = authToken {
             request.setValue("Bearer " + token, forHTTPHeaderField: authorizationHeaderName)
         }
-        
-        switch contentType {
-        case .json:
-            request.httpBody = try? JSONSerialization.data(withJSONObject: body as! [String: AnyHashable], options: .prettyPrinted)
-        case .image:
-            request.httpBody = body as! Data?
-        case .any:
-            request.httpBody = body as! Data?
-        }
-        
+        request.httpBody = body
         return request
     }
 }
