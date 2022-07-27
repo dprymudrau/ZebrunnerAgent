@@ -191,6 +191,7 @@ class RequestManager {
         multipartRequest.addDataField(named: "file", data: file, mimeType: mimeType)
         var request = multipartRequest.asURLRequest()
         request.httpMethod = method.rawValue
+        print(request)
         return request
     }
 }
