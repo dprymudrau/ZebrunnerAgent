@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AppKit
 
 class RequestManager {
     private var baseUrl: String!
@@ -210,7 +211,13 @@ class RequestManager {
                     body += "\r\n\r\n\(paramValue)\r\n"
                 } else {
                     let paramSrc = param["src"] as! Data
-                    let fileContent = String(data: paramSrc, encoding: .utf8)!
+                    var fileContent = ""
+                    if let content = String(data: paramSrc, encoding: .utf8) {
+                        fileContent = content
+                    } else {
+                        body += "; filename=\"\(name)\"\r\n"
+                        + "Content-Type: \"content-type header\"\r\n\r\n\(paramSrc)\r\n"
+                    }
                     body += "; filename=\"\(name)\"\r\n"
                     + "Content-Type: \"content-type header\"\r\n\r\n\(fileContent)\r\n"
                 }
