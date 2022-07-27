@@ -20,20 +20,20 @@ public class Label {
         try? ZebrunnerApiClient.getInstance().sendTestRunLabels(labels)
     }
     
-    public func attachTestCaseLabel(testCase: XCTestCase, key: String, value: String) {
-        attachTestCaseLabel(testCase: testCase.name, key: key, value: value)
+    public static func attachTestCaseLabel(_ testCase: XCTestCase, key: String, value: String) {
+        attachTestCaseLabel(testCase.name, key: key, value: value)
     }
     
-    public func attachTestCaseLabel(testCase: String, key: String, value: String) {
+    public static func attachTestCaseLabel(_ testCase: String, key: String, value: String) {
         let labels = [[key: value]]
-        attachTestCaseLabels(testCase: testCase, labels: labels)
+        attachTestCaseLabels(testCase, labels: labels)
     }
     
-    public func attachTestCaseLabels(testCase: XCTestCase, labels: [[String: String]]) {
-        attachTestCaseLabels(testCase: testCase.name, labels: labels)
+    public static func attachTestCaseLabels(_ testCase: XCTestCase, labels: [[String: String]]) {
+        attachTestCaseLabels(testCase.name, labels: labels)
     }
     
-    public func attachTestCaseLabels(testCase: String, labels: [[String: String]]) {
+    public static func attachTestCaseLabels(_ testCase: String, labels: [[String: String]]) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseLabels(for: testCase, labels: labels)
     }
     
