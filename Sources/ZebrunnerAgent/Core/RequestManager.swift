@@ -195,34 +195,30 @@ class RequestManager {
             ]] as [[String : Any]]
         
         let boundary = "Boundary-\(UUID().uuidString)"
-        var body = ""
+        var body = Data()
         for param in parameters {
             if param["disabled"] == nil {
                 let paramName = param["key"]!
-                body += "--\(boundary)\r\n"
-                body += "Content-Disposition:form-data; name=\"\(paramName)\""
+                body += Data("--\(boundary)\r\n".utf8)
+                body += Data("Content-Disposition:form-data; name=\"\(paramName)\"".utf8)
                 if param["contentType"] != nil {
-                    body += "\r\nContent-Type: \(param["contentType"] as! String)"
+                    body += Data("\r\nContent-Type: \(param["contentType"] as! String)".utf8)
                 }
                 let paramType = param["type"] as! String
                 if paramType == "text" {
                     let paramValue = param["value"] as! String
-                    body += "\r\n\r\n\(paramValue)\r\n"
+                    body += Data("\r\n\r\n\(paramValue)\r\n".utf8)
                 } else {
                     let paramSrc = param["src"] as! Data
-                    var fileContent = ""
-                    if let content = String(data: paramSrc, encoding: .utf8) {
-                        fileContent = content
-                        body += "; filename=\"\(name)\"\r\n"
-                        + "Content-Type: \"content-type header\"\r\n\r\n\(fileContent)\r\n"
-                    } else {
-                        body += "; filename=\"\(name)\"\r\n"
-                        + "Content-Type: \"content-type header\"\r\n\r\n\(paramSrc)\r\n"
-                    }
+                    body += Data("; filename=\"\(name)\"\r\n".utf8)
+                    body += Data("Content-Type: \"content-type header\"\r\n".utf8)
+                    body += Data("\r\n".utf8)
+                    body += paramSrc
+                    body += Data("\r\n".utf8)
                 }
             }
         }
-        body += "--\(boundary)--\r\n";
+        body += Data("--\(boundary)--\r\n".utf8);
         let postData = body.data(using: .utf8)
         
         var request = URLRequest(url: url)
