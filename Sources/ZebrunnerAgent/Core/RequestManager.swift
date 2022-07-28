@@ -213,12 +213,12 @@ class RequestManager {
                     var fileContent = ""
                     if let content = String(data: paramSrc, encoding: .utf8) {
                         fileContent = content
+                        body += "; filename=\"\(name)\"\r\n"
+                        + "Content-Type: \"content-type header\"\r\n\r\n\(fileContent)\r\n"
                     } else {
                         body += "; filename=\"\(name)\"\r\n"
                         + "Content-Type: \"content-type header\"\r\n\r\n\(paramSrc)\r\n"
                     }
-                    body += "; filename=\"\(name)\"\r\n"
-                    + "Content-Type: \"content-type header\"\r\n\r\n\(fileContent)\r\n"
                 }
             }
         }
