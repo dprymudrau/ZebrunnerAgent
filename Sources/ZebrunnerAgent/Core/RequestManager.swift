@@ -219,7 +219,6 @@ class RequestManager {
             }
         }
         body += Data("--\(boundary)--\r\n".utf8);
-        let postData = body.data(using: .utf8)
         
         var request = URLRequest(url: url)
         if let token = authToken {
@@ -227,7 +226,7 @@ class RequestManager {
         }
         request.addValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.httpMethod = method.rawValue
-        request.httpBody = postData
+        request.httpBody = body
         return request
     }
 }
