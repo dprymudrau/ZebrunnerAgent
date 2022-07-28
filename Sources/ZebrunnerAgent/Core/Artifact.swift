@@ -12,11 +12,6 @@ public class Artifact {
     private init() {}
     
     //Artifacts to test case
-    public static func attachToTestCase(_ testCase: String, artifact: [UInt8], name: String) {
-        let data = Data(artifact)
-        attachToTestCase(testCase, artifact: data, name: name)
-    }
-    
     public static func attachToTestCase(_ testCase: String, artifactPath: String, name: String) {
         try? ZebrunnerApiClient.getInstance().sendTestCaseArtifact(for: testCase,
                                                                    with: getFileData(pathToFile: artifactPath),
@@ -38,11 +33,6 @@ public class Artifact {
     }
     
     //Artifact References to test run
-    public static func attachToTestRun(artifact: [UInt8], name: String) {
-        let data = Data(artifact)
-        attachToTestRun(artifact: data, name: name)
-    }
-    
     public static func attachToTestRun(artifactPath: String, name: String) {
         try? ZebrunnerApiClient.getInstance().sendTestRunArtifact(artifact: getFileData(pathToFile: artifactPath),
                                                                   name: name)
