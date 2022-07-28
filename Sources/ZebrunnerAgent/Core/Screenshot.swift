@@ -11,12 +11,12 @@ import XCTest
 public class Screenshot {
     private init() {}
     
-    public static func sendScreenshot(_ testCaseName: String, screenshot: XCUIScreenshot) {
+    public static func sendScreenshot(_ testCase: String, screenshot: XCUIScreenshot) {
         try? ZebrunnerApiClient.getInstance().sendScreenshot(testCaseName, screenshot: screenshot.pngRepresentation)
     }
     
     
-    public static func sendScreenshot(_ testCaseName: String, screenshot: Data?) {
+    public static func sendScreenshot(_ testCase: String, screenshot: Data?) {
         try? ZebrunnerApiClient.getInstance().sendScreenshot(testCaseName, screenshot: screenshot)
     }
     
