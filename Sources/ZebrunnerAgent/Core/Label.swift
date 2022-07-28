@@ -13,16 +13,16 @@ public class Label {
     
     public static func attachToTestRun(key: String, value: String) {
         let labels = [key: value]
-        attachTestRunLabels(labels: labels)
+        attachToTestRun(labels: labels)
     }
     
-    public static func attachToTestCase(labels: [String: String]) {
+    public static func attachToTestRun(labels: [String: String]) {
         try? ZebrunnerApiClient.getInstance().sendTestRunLabels(labels)
     }
         
     public static func attachToTestCase(_ testCase: String, key: String, value: String) {
         let labels = [key: value]
-        attachTestCaseLabels(testCase, labels: labels)
+        attachToTestCase(testCase, labels: labels)
     }
     
     public static func attachToTestCase(_ testCase: String, labels: [String: String]) {

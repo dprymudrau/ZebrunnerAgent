@@ -12,12 +12,12 @@ public class Screenshot {
     private init() {}
     
     public static func sendScreenshot(_ testCase: String, screenshot: XCUIScreenshot) {
-        try? ZebrunnerApiClient.getInstance().sendScreenshot(testCaseName, screenshot: screenshot.pngRepresentation)
+        try? ZebrunnerApiClient.getInstance().sendScreenshot(testCase, screenshot: screenshot.pngRepresentation)
     }
     
     
     public static func sendScreenshot(_ testCase: String, screenshot: Data?) {
-        try? ZebrunnerApiClient.getInstance().sendScreenshot(testCaseName, screenshot: screenshot)
+        try? ZebrunnerApiClient.getInstance().sendScreenshot(testCase, screenshot: screenshot)
     }
     
 }
