@@ -15,9 +15,9 @@ public class ObservationConfiguration: NSObject {
     }
 }
 ```
-baseUrl - URL of your Zebrunner workspace
-projectKey - The possible values can be found in Zebrunner on Projects tab
-refreshToken - Generate it on Account and Profile page on Zebrunner
+`baseUrl` - URL of your Zebrunner workspace
+`projectKey` - The possible values can be found in Zebrunner on Projects tab
+`refreshToken` - Generate it on Account and Profile page on Zebrunner
 
 3. In `Info.plist` or Xcode settings of test (Info tab) add Principal class with value `{YourTarget}.{YourPrincipalClass}`
 where 
