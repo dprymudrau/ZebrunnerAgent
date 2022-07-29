@@ -19,7 +19,7 @@ public class ObservationConfiguration: NSObject {
 `projectKey` - The possible values can be found in Zebrunner on Projects tab
 `refreshToken` - Generate it on Account and Profile page on Zebrunner
 
-3. In `Info.plist` or Xcode settings of test (Info tab) add Principal class with value `{YourTarget}.{YourPrincipalClass}`
+3. In `Info.plist` or Xcode settings of Test Target (Info tab) add Principal class with value `{YourTarget}.{YourPrincipalClass}`
 where 
 `YourTarget` - project target where observation set up class created
 `YourPrincipalClass` - class name of observation configuration class
