@@ -31,7 +31,7 @@ where
 3. `Screenshot` - use when you need attach screenshot to test case
 
 ## Test maintainer
-You can assign test maintainer for your test case you'll need to set maintainer zebrunner username value to `testMaintainer` variable in test case:
+You can assign test maintainer for your test case you'll need to set maintainer's zebrunner username value to `testMaintainer` variable in test case:
 ```
 func testSmth() {
     testMaintainer = "dprymudrau"
