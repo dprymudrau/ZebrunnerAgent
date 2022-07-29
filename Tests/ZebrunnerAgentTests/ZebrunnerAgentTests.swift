@@ -3,11 +3,11 @@ import ZebrunnerAgent
 
 final class ZebrunnerAgentTests: XCTestCase {
     func testMaintainerAnonymous() throws {
-        XCTAssert(methodMaintainer == "anonymous", "methodMaintainer variable isn't \(methodMaintainer)")
+        XCTAssert(testMaintainer == "anonymous", "testMaintainer variable isn't \(testMaintainer)")
     }
     
     func testMaintainerIsSet() throws {
-        methodMaintainer = "dprymudrau"
-        XCTAssert(methodMaintainer == "dprymudrau", "methodMaintainer variable isn't \(methodMaintainer)")
+        testMaintainer = "dprymudrau"
+        XCTAssert(testMaintainer == "dprymudrau", "testMaintainer variable isn't \(testMaintainer)")
     }
 }

@@ -12,7 +12,7 @@ extension XCTestCase {
     
     private static let association = ObjectAssociation<NSString>()
     
-    public var methodMaintainer: NSString {
+    public var testMaintainer: NSString {
         get {
             return XCTestCase.association[self] ?? "anonymous"
         }

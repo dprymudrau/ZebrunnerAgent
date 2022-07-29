@@ -136,7 +136,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         let testData = TestData(name: testCase.name,
                                 className: getTestSuiteName(for: testCase),
                                 methodName: testCase.name,
-                                maintainer: testCase.methodMaintainer as String)
+                                maintainer: testCase.testMaintainer as String)
         zebrunnerClient.updateTest(testData: testData)
     }
     
