@@ -1,7 +1,7 @@
 # ZebrunnerAgent
 
 ## Instalation steps:
-1. Add package as dependecy to your project
+1. Add [package as dependecy](https://developer.apple.com/documentation/xcode/adding-package-dependencies-to-your-app) to your project
 2. Create swift class that extends `NSObject`. Example:
 ```
 import Foundation
