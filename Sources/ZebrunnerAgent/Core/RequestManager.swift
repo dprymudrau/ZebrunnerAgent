@@ -105,6 +105,12 @@ class RequestManager {
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
+    public func buildLogRequest(testRunId: Int, testId: Int, logMessages: [String], level: LogLevel, timestamp: String) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/logs")!
+        let body = getBodyForLogs(testId: testId, logMessages: logMessages, level: level, timestamp: timestamp)
+        return prepareRequest(url: url, method: .POST, body: body)
+    }
+    
     public func buildScreenshotRequest(testRunId: Int, testId: Int, screenshot: Data?) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)/screenshots")!
         return prepareRequest(url: url, method: .POST, body: screenshot!, contentType: .image)
@@ -144,28 +150,41 @@ class RequestManager {
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    private func getBodyForLabels(keyValues: [String: String]) -> AttachementLabelDTO {
+    private func getBodyForLogs(testId: Int, logMessages: [String], level: LogLevel, timestamp: String) -> [LogDto]{
+        var logs = [LogDto]()
+        for logMessage in logMessages {
+            logs.append(LogDto(testId: String(testId), level: level, message: logMessage, timestamp: timestamp))
+        }
+        return logs
+    }
+    
+    private func getBodyForLabels(keyValues: [String: String]) -> AttachmentLabelDTO {
         var labels = [LabelDTO]()
         for (key, value) in keyValues {
             labels.append(LabelDTO(key: key, value: value))
         }
-        return AttachementLabelDTO(items: labels)
+        return AttachmentLabelDTO(items: labels)
     }
     
-    private func getBodyForArtifacts(keyValues: [String: String]) -> AttachementArtifactDTO {
+    private func getBodyForArtifacts(keyValues: [String: String]) -> AttachmentArtifactDTO {
         var artifacts = [ArtifactDTO]()
         for (name, value) in keyValues {
             artifacts.append(ArtifactDTO(name: name, value: value))
         }
-        return AttachementArtifactDTO(items: artifacts)
+        return AttachmentArtifactDTO(items: artifacts)
     }
     
-    private func prepareRequest(url: URL, method: HttpMethod, body: AttachementLabelDTO) -> URLRequest {
+    private func prepareRequest(url: URL, method: HttpMethod, body: [LogDto]) -> URLRequest {
         let jsonBody = try? JSONEncoder().encode(body)
         return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
     }
     
-    private func prepareRequest(url: URL, method: HttpMethod, body: AttachementArtifactDTO) -> URLRequest {
+    private func prepareRequest(url: URL, method: HttpMethod, body: AttachmentLabelDTO) -> URLRequest {
+        let jsonBody = try? JSONEncoder().encode(body)
+        return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: AttachmentArtifactDTO) -> URLRequest {
         let jsonBody = try? JSONEncoder().encode(body)
         return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
     }

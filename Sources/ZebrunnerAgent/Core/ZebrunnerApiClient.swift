@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  ZebrunnerApiClient.swift
 //  
 //
 //  Created by Dzmitry Prymudrau on 20.07.22.
@@ -157,6 +157,21 @@ public class ZebrunnerApiClient {
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    /// Send bulk logs for given test case
+    /// - Parameters:
+    ///   - testCase: name of test case to send logs
+    ///   - logMessages: log messages to send
+    ///   - level: log level of log messages
+    ///   - timestamp: timestamp for log messages
+    public func sendLogs(testCase: String, logMessages: [String], level: LogLevel, timestamp: String){
+        guard let testCaseId = testCasesExecuted[testCase] else {
+            print("Cannot find \(testCase) in executed tests scope")
+            return
+        }
+        let request = requestMgr.buildLogRequest(testRunId: getTestRunId(), testId: testCaseId, logMessages: logMessages, level: level, timestamp: timestamp)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
     /// Attaches screenshot for given test case
     ///  - Parameters:
     ///     - testCaseName: name of test case to attach screenshot
@@ -183,7 +198,6 @@ public class ZebrunnerApiClient {
                                                                testCaseId: testCaseId,
                                                                artifact: data,
                                                                name: name)
-        
         _ = URLSession.shared.syncRequest(with: request)
     }
     
@@ -282,3 +296,23 @@ extension URLSession {
         return (data, response, error)
     }
 }
+
+extension Date {
+    
+    /// Returns Date in ISO8601 timestamp with an offset from UTC
+    /// - Parameter format: date format
+    /// - Returns: String date
+    func toString(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ") -> String {
+        let df = DateFormatter()
+        df.dateFormat = format
+        return df.string(from: self)
+    }
+    
+    /// Returns current epoch unix timestamp  with millisecond-precision
+    /// - Returns: String timestamp
+    func currentEpochUnixTimestamp () -> String {
+        let timestamp = Int(Date().timeIntervalSince1970 * 1_000)
+        return String(timestamp)
+    }
+}
+

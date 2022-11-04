@@ -52,6 +52,16 @@ public class Artifact {
         try? ZebrunnerApiClient.getInstance().sendTestRunArtifactReferences(references: references)
     }
     
+    /// Sends log messages for certain test case to Zebrunner
+    /// - Parameters:
+    ///   - testCase: test case
+    ///   - logMessages: array of log messages
+    ///   - level: log level
+    ///   - timestamp: timestamp in Epoch Unix format
+    public static func sendLogs(_ testCase: String, logMessages: [String], level: LogLevel, timestamp: String) {
+        try? ZebrunnerApiClient.getInstance().sendLogs(testCase: testCase, logMessages: logMessages, level: level, timestamp: timestamp)
+    }
+    
     private static func getFileData(pathToFile: String) -> Data? {
         return try? NSData(contentsOfFile:pathToFile, options:[]) as Data
     }

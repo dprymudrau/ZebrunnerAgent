@@ -13,6 +13,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     private var zebrunnerClient: ZebrunnerApiClient!
     private static var observer: ZebrunnerObserver!
     private var testSuiteDictionary: [String: [XCTest]] = [:]
+    private var outputObserver: OutputObserver!
     
     private init(baseUrl: String, projectKey: String, refreshToken: String) {
         super.init()
@@ -60,6 +61,8 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
                                 className: className,
                                 methodName: testCase.name)
         zebrunnerClient.startTest(testData: testData, startTime: Date().toString())
+        
+        startLogsCapture(testCase)
     }
     
     /// Executed when test case fails
@@ -67,6 +70,8 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///    - testCase: object of XCTestCase with data about executed test case
     ///    - issue: contains data about issue that is cause of fail
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
+        NotificationCenter.default.post(name: .interruptionInCapturedLogs, object: issue)
+        
         updateMaintainer(testCase)
         var failureDescription: String
         if let reason = issue.detailedDescription {
@@ -91,8 +96,8 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseDidFinish(_ testCase: XCTestCase) {
         updateMaintainer(testCase)
+        finishLogsCapture()
         if testCase.testRun!.hasSucceeded {
-            
             zebrunnerClient.finishTest(result: "PASSED",
                                        name: testCase.name,
                                        endTime: Date().toString())
@@ -126,7 +131,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
                 }
             }
         }
-        return "Unreconized"
+        return "Unrecognized"
     }
     
     /// Updates maintainer for test case if this case inherits XCZebrunnerTestCase
@@ -140,13 +145,19 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         zebrunnerClient.updateTest(testData: testData)
     }
     
-}
-
-/// Extension needed for getting Date in ISO8601 timestamp with an offset from UTC
-extension Date {
-    func toString(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ") -> String{
-        let df = DateFormatter()
-        df.dateFormat = format
-        return df.string(from: self)
+    /// Starts capturing console output for test case and subscribes to logs interruption event. Should be called on testCaseWillStart event
+    /// - Parameter testCase: object of executed test case
+    private func startLogsCapture(_ testCase: XCTestCase) {
+        outputObserver = OutputObserver(testCaseName: testCase.name)
+        outputObserver.subscribeToLogsInterruptionEvent()
+        outputObserver.captureConsoleOutput()
+        
     }
+    
+    /// Finishes capturing console output and unsubsribes from logs interruption event. Should be called on testCaseDidFinish event
+    private func finishLogsCapture() {
+        outputObserver.sendCapturedLogs()
+        outputObserver.unsubscribeFromLogsInterruptionEvent()
+    }
+    
 }
