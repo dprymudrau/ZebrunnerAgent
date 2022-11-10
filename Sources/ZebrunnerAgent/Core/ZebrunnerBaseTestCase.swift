@@ -1,5 +1,5 @@
 //
-//  XCZebrunnerTestCase.swift
+//  ZebrunnerBaseTestCase.swift
 //  
 //
 //  Created by Dzmitry Prymudrau on 22.07.22.
@@ -7,6 +7,14 @@
 
 import Foundation
 import XCTest
+
+open class ZebrunnerBaseTestCase: XCTestCase {
+    
+    public override func record(_ issue: XCTIssue) {
+        takeScreenshot()
+        super.record(issue)
+    }
+}
 
 extension XCTestCase {
     

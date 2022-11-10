@@ -15,20 +15,24 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     private var testSuiteDictionary: [String: [XCTest]] = [:]
     private var outputObserver: OutputObserver!
     
-    private init(baseUrl: String, projectKey: String, refreshToken: String) {
+    private init(configuration: Configuration) {
         super.init()
-        self.zebrunnerClient = ZebrunnerApiClient.setUp(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+        self.zebrunnerClient = ZebrunnerApiClient.setUp(configuration: configuration)
+        self.outputObserver = OutputObserver(launchMode: configuration.launchMode)
         XCTestObservationCenter.shared.addTestObserver(self)
     }
     
-    /// Creates instanse of ZebrunerObserver
+    /// Creates instance of ZebrunnerObserver
     /// - Parameters:
-    ///    - baseUrl: Zebrunner tenant base url
-    ///    - projectKey: the project this test run belongs to
-    ///    - refreshToken: needed for exchanging for a short living access token to perform future manipulations
-    public static func setUp(baseUrl: String, projectKey: String, refreshToken: String) {
-        if(observer == nil) {
-            self.observer = ZebrunnerObserver(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+    ///    - configuration: configuration information about reporting to Zebrunner
+    public static func setUp(configuration: Configuration) {
+        guard configuration.isReportingEnabled else {
+            print("Reporting to Zebrunner is turned off")
+            return
+        }
+        
+        if (observer == nil) {
+            self.observer = ZebrunnerObserver(configuration: configuration)
         }
     }
     
@@ -61,7 +65,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
                                 className: className,
                                 methodName: testCase.name)
         zebrunnerClient.startTest(testData: testData, startTime: Date().toString())
-        
+
         startLogsCapture(testCase)
     }
     
@@ -80,12 +84,12 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
             failureDescription = issue.compactDescription
         }
         if !failureDescription.isEmpty {
-            zebrunnerClient.finishTest(result: "FAILED",
+            zebrunnerClient.finishTest(result: TestStatus.failed,
                                        reason: failureDescription,
                                        name: testCase.name,
                                        endTime: Date().toString())
         } else {
-            zebrunnerClient.finishTest(result: "FAILED",
+            zebrunnerClient.finishTest(result: TestStatus.failed,
                                        name: testCase.name,
                                        endTime: Date().toString())
         }
@@ -96,9 +100,15 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseDidFinish(_ testCase: XCTestCase) {
         updateMaintainer(testCase)
-        finishLogsCapture()
-        if testCase.testRun!.hasSucceeded {
-            zebrunnerClient.finishTest(result: "PASSED",
+        finishLogsCapture(testCase)
+        
+        if testCase.testRun!.hasSucceeded && !testCase.testRun!.hasBeenSkipped {
+            zebrunnerClient.finishTest(result: TestStatus.passed,
+                                       name: testCase.name,
+                                       endTime: Date().toString())
+        }
+        if testCase.testRun!.hasBeenSkipped {
+            zebrunnerClient.finishTest(result: TestStatus.skipped,
                                        name: testCase.name,
                                        endTime: Date().toString())
         }
@@ -145,19 +155,14 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         zebrunnerClient.updateTest(testData: testData)
     }
     
-    /// Starts capturing console output for test case and subscribes to logs interruption event. Should be called on testCaseWillStart event
+    /// Starts capturing console output for test case. Should be called on testCaseWillStart event
     /// - Parameter testCase: object of executed test case
     private func startLogsCapture(_ testCase: XCTestCase) {
-        outputObserver = OutputObserver(testCaseName: testCase.name)
-        outputObserver.subscribeToLogsInterruptionEvent()
-        outputObserver.captureConsoleOutput()
-        
+        outputObserver.startLogsCapture(testCase: testCase)
     }
-    
-    /// Finishes capturing console output and unsubsribes from logs interruption event. Should be called on testCaseDidFinish event
-    private func finishLogsCapture() {
-        outputObserver.sendCapturedLogs()
-        outputObserver.unsubscribeFromLogsInterruptionEvent()
+    /// Finishes capturing console output. Should be called on testCaseDidFinish event
+    /// - Parameter testCase: object of executed test case
+    private func finishLogsCapture(_ testCase: XCTestCase) {
+        outputObserver.finishLogsCapture(testCase: testCase)
     }
-    
 }

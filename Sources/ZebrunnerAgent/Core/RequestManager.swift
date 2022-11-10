@@ -75,20 +75,20 @@ class RequestManager {
         return prepareRequest(url: url, method: .POST, body: body)
     }
     
-    public func buildFinishTestRequest(testRunId: Int, testId: Int, result: String, reason: String, endTime: String) -> URLRequest {
+    public func buildFinishTestRequest(testRunId: Int, testId: Int, result: TestStatus, reason: String, endTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
         let body: [String: AnyHashable] = [
-            "result": result,
+            "result": result.rawValue,
             "reason": reason,
             "endedAt": endTime
         ]
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    public func buildFinishTestRequest(testRunId: Int, testId: Int, result: String, endTime: String) -> URLRequest {
+    public func buildFinishTestRequest(testRunId: Int, testId: Int, result: TestStatus, endTime: String) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
         let body: [String: AnyHashable] = [
-            "result": result,
+            "result": result.rawValue,
             "endedAt": endTime
         ]
         return prepareRequest(url: url, method: .PUT, body: body)

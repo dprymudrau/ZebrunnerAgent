@@ -15,17 +15,17 @@ public class ZebrunnerApiClient {
     private var testRunResponse: TestRunResponse?
     private var testCasesExecuted: [String: Int] = [:]
     
-    private init(baseUrl: String, projectKey: String, refreshToken: String) {
-        self.projectKey = projectKey
-        self.requestMgr = RequestManager(baseUrl: baseUrl, refreshToken: refreshToken)
+    private init(configuration: Configuration) {
+        self.projectKey = configuration.projectKey
+        self.requestMgr = RequestManager(baseUrl: configuration.baseUrl, refreshToken: configuration.accessToken)
         if let authToken = self.authenticate() {
             self.requestMgr.setAuthToken(authToken: authToken)
         }
     }
     
-    public static func setUp(baseUrl: String, projectKey: String, refreshToken: String) -> ZebrunnerApiClient? {
+    public static func setUp(configuration: Configuration) -> ZebrunnerApiClient? {
         if(self.instance == nil) {
-            self.instance = ZebrunnerApiClient(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+            self.instance = ZebrunnerApiClient(configuration: configuration)
         }
         return instance
     }
@@ -115,7 +115,7 @@ public class ZebrunnerApiClient {
     ///     - reason: message somehow explaining the result
     ///     - name: name of test case that shuld be finished
     ///     - endTime: ISO8601 timestamp with an offset from UTC of test execution finish
-    public func finishTest(result: String, reason: String, name: String, endTime: String) {
+    public func finishTest(result: TestStatus, reason: String, name: String, endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
@@ -133,7 +133,7 @@ public class ZebrunnerApiClient {
     ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
     ///     - name: name of test case that shuld be finished
     ///     - endTime: ISO8601 timestamp with an offset from UTC of test execution finish
-    public func finishTest(result: String, name: String, endTime: String) {
+    public func finishTest(result: TestStatus, name: String, endTime: String) {
         guard let id = testRunResponse?.id else {
             print("There is no test run id found \(String(describing: testRunResponse))")
             return
