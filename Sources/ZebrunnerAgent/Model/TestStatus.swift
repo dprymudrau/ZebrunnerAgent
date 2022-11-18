@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 public enum TestStatus: String {
   case passed = "PASSED"
   case failed = "FAILED"

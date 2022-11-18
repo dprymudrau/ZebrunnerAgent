@@ -1,5 +1,5 @@
 //
-//  AttachmentDTO.swift
+//  TestArtifact.swift
 //  
 //
 //  Created by Dzmitry Prymudrau on 27.07.22.
@@ -25,7 +25,7 @@ public struct LabelDTO: Codable {
     var value: String
 }
 
-public struct LogDto: Codable {
+public struct LogDTO: Codable {
     var testId: String
     var level: LogLevel
     var message: String

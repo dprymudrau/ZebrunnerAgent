@@ -2,7 +2,7 @@
 //  RepeatingTimer.swift
 //  
 //
-//  Created by asukhodolova on 9.11.22.
+//  Created by asukhodolova on 8.11.22.
 //
 
 import Foundation

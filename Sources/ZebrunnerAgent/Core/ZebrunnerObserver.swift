@@ -11,110 +11,114 @@ import XCTest
 public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     private var zebrunnerClient: ZebrunnerApiClient!
-    private static var observer: ZebrunnerObserver!
     private var testSuiteDictionary: [String: [XCTest]] = [:]
     private var outputObserver: OutputObserver!
+    private var configuration: Configuration!
     
-    private init(configuration: Configuration) {
+    public override init() {
         super.init()
-        self.zebrunnerClient = ZebrunnerApiClient.setUp(configuration: configuration)
-        self.outputObserver = OutputObserver(launchMode: configuration.launchMode)
         XCTestObservationCenter.shared.addTestObserver(self)
     }
     
-    /// Creates instance of ZebrunnerObserver
-    /// - Parameters:
-    ///    - configuration: configuration information about reporting to Zebrunner
-    public static func setUp(configuration: Configuration) {
-        guard configuration.isReportingEnabled else {
-            print("Reporting to Zebrunner is turned off")
-            return
+    /// Reads configuration information according to priority:
+    /// 1. environment variables
+    /// 2. properties from Info.plist
+    /// - Parameter testBundle: current test bundle
+    /// - Returns: configuration information
+    private func readConfiguration(_ testBundle: Bundle) -> Configuration {
+        var configuration = try! EnvironmentConfigurationProvider().getConfiguration()
+        if configuration == nil {
+            configuration = try! PropertiesConfigurationProvider(testBundle: testBundle).getConfiguration()
         }
-        
-        if (observer == nil) {
-            self.observer = ZebrunnerObserver(configuration: configuration)
-        }
+        return (configuration != nil) ? configuration! : Configuration(isReportingEnabled: false)
     }
     
-    /// Executed befire test bundle started and creates new Test Run on Zebrunner
+    /// Executes before test bundle started and creates a new Test Run on Zebrunner
     ///  - Parameters:
     ///    - testBundle: object of Bundle
     public func testBundleWillStart(_ testBundle: Bundle) {
-        guard let testRunName = ProcessInfo.processInfo.environment["TEST_RUN_NAME"],
-              !testRunName.isEmpty else {
-            zebrunnerClient.startTestRun(testRunName: "Test Run", startTime: Date().toString())
+        configuration = readConfiguration(testBundle)
+        guard configuration.isReportingEnabled else {
+            XCTestObservationCenter.shared.removeTestObserver(self)
             return
         }
-        zebrunnerClient.startTestRun(testRunName: testRunName, startTime: Date().toString())
+        
+        zebrunnerClient = ZebrunnerApiClient.setUp(configuration: configuration)
+        outputObserver = OutputObserver(isDebugLogsEnabled: configuration.isDebugLogsEnabled)
+        
+        let requestData = TestRunStartDTO(name: configuration.displayName,
+                                          startTime: Date().toString(),
+                                          config: configuration.config,
+                                          milestone: configuration.milestone,
+                                          notifications: configuration.notifications)
+        zebrunnerClient.startTestRun(testRunStartRequest: requestData)
+        
+        if let locale = configuration.locale {
+            Locale.setLocale(localeValue: locale)
+        }
     }
     
-    /// Executed on start of each Test Class used for saving name of classes and tests inside
+    /// Executes on start of each Test Class used for saving name of classes and tests inside
     ///  - Parameters:
     ///     - testSuite: object of XCTestSuite that will be executed
     public func testSuiteWillStart(_ testSuite: XCTestSuite) {
         testSuiteDictionary[testSuite.name] = testSuite.tests
     }
     
-    /// Executed before Test Case started used to register test executin start on Zebrunner
+    /// Executes before Test Case started used to register test execution start on Zebrunner
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseWillStart(_ testCase: XCTestCase) {
-        let className = getTestSuiteName(for: testCase)
+        let requestData = TestCaseStartDTO(name: testCase.name,
+                                           className: getTestSuiteName(for: testCase),
+                                           methodName: testCase.name,
+                                           startTime: Date().toString())
+        zebrunnerClient.startTest(testCaseStartRequest: requestData)
         
-        let testData = TestData(name: testCase.name,
-                                className: className,
-                                methodName: testCase.name)
-        zebrunnerClient.startTest(testData: testData, startTime: Date().toString())
-
         startLogsCapture(testCase)
     }
     
-    /// Executed when test case fails
+    /// Executes when test case fails
     ///  - Parameters:
     ///    - testCase: object of XCTestCase with data about executed test case
-    ///    - issue: contains data about issue that is cause of fail
+    ///    - issue: contains data about issue that causes a fail
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
-        NotificationCenter.default.post(name: .interruptionInCapturedLogs, object: issue)
-        
+        suspendLogsCapture(issue)
         updateMaintainer(testCase)
+        
         var failureDescription: String
         if let reason = issue.detailedDescription {
             failureDescription = reason
         } else {
             failureDescription = issue.compactDescription
         }
-        if !failureDescription.isEmpty {
-            zebrunnerClient.finishTest(result: TestStatus.failed,
-                                       reason: failureDescription,
-                                       name: testCase.name,
-                                       endTime: Date().toString())
-        } else {
-            zebrunnerClient.finishTest(result: TestStatus.failed,
-                                       name: testCase.name,
-                                       endTime: Date().toString())
-        }
+        let requestData = TestCaseFinishDTO(result: TestStatus.failed,
+                                            endTime: Date().toString(),
+                                            reason: failureDescription)
+        zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
     }
     
-    /// Executed after finish of test case
+    /// Executes after finish of test case
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseDidFinish(_ testCase: XCTestCase) {
-        updateMaintainer(testCase)
         finishLogsCapture(testCase)
+        updateMaintainer(testCase)
         
         if testCase.testRun!.hasSucceeded && !testCase.testRun!.hasBeenSkipped {
-            zebrunnerClient.finishTest(result: TestStatus.passed,
-                                       name: testCase.name,
-                                       endTime: Date().toString())
+            let requestData = TestCaseFinishDTO(result: TestStatus.passed,
+                                                endTime: Date().toString())
+            zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
         }
         if testCase.testRun!.hasBeenSkipped {
-            zebrunnerClient.finishTest(result: TestStatus.skipped,
-                                       name: testCase.name,
-                                       endTime: Date().toString())
+            let result = configuration.skipsAsFailures ? TestStatus.failed : TestStatus.skipped
+            let requestData = TestCaseFinishDTO(result: result,
+                                                endTime: Date().toString())
+            zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
         }
     }
     
-    /// Executed after Test Class finished execution
+    /// Executes after Test Class finished execution
     ///  - Parameters:
     ///     - testSuite: object of XCTestSuite that executed
     public func testSuiteDidFinish(_ testSuite: XCTestSuite) {
@@ -122,11 +126,12 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     }
     
     
-    /// Executed after finish of executed test suite
+    /// Executes after finish of executed test suite
     /// - Parameters:
     ///  - testBundle: object of Bundle
     public func testBundleDidFinish(_ testBundle: Bundle) {
-        zebrunnerClient.finishTestRun(endTime: Date().toString())
+        let requestData = TestRunFinishDTO(endTime: Date().toString())
+        zebrunnerClient.finishTestRun(testRunFinishRequest: requestData)
     }
     
     
@@ -144,15 +149,21 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         return "Unrecognized"
     }
     
-    /// Updates maintainer for test case if this case inherits XCZebrunnerTestCase
+    /// Updates maintainer for test case
     ///  - Parameters:
     ///     - testCase: object of executed test case
     private func updateMaintainer(_ testCase: XCTestCase) {
-        let testData = TestData(name: testCase.name,
-                                className: getTestSuiteName(for: testCase),
-                                methodName: testCase.name,
-                                maintainer: testCase.testMaintainer as String)
-        zebrunnerClient.updateTest(testData: testData)
+        let requestData = TestCaseUpdateDTO(name: testCase.name,
+                                            className: getTestSuiteName(for: testCase),
+                                            methodName: testCase.name,
+                                            maintainer: testCase.testMaintainer as String)
+        zebrunnerClient.updateTest(testCaseUpdateRequest: requestData)
+    }
+    
+    /// Notifies OutputObserver that test case has an error and reports it
+    /// - Parameter issue: caused issue of failed test case
+    private func suspendLogsCapture(_ issue: XCTIssue){
+        NotificationCenter.default.post(name: .interruptionInCapturedLogs, object: issue)
     }
     
     /// Starts capturing console output for test case. Should be called on testCaseWillStart event

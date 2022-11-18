@@ -12,19 +12,21 @@ class OutputObserver {
     
     private var testCaseName: String
     private var outputText: String
-    private var launchMode: LaunchMode
+    private var isDebugLogsEnabled: Bool
     private var observer: AnyObject?
     private var timer: RepeatingTimer
+    
     private let queue = DispatchQueue(label: "com.zebrunner.reporting")
     private let semaphore = DispatchSemaphore(value: 1)
+    private let defaultTimeIntervalInSeconds = 3
     
-    init(launchMode: LaunchMode) {
-        self.launchMode = launchMode
+    init(isDebugLogsEnabled: Bool) {
+        self.isDebugLogsEnabled = isDebugLogsEnabled
         self.outputText = ""
         self.testCaseName = ""
         
         // timer for sending logs to Zebrunner in specified time interval
-        self.timer = RepeatingTimer(timeInterval: 3)
+        self.timer = RepeatingTimer(timeInterval: TimeInterval(defaultTimeIntervalInSeconds))
         timer.eventHandler = {
             self.sendCapturedLogs()
         }
@@ -60,14 +62,14 @@ class OutputObserver {
         let inputPipe = Pipe()
         let outputPipe = Pipe()
         
-        // Copy STDOUT file descriptor to inputPipe for writing strings back to STDOUT to show as console output
+        // copy STDOUT file descriptor to inputPipe for writing strings back to STDOUT to show as console output
         dup2(FileHandle.standardOutput.fileDescriptor, inputPipe.fileHandleForWriting.fileDescriptor)
         
-        // Intercept STDERR with outputPipe
+        // intercept STDERR with outputPipe
         dup2(outputPipe.fileHandleForWriting.fileDescriptor, FileHandle.standardError.fileDescriptor)
         
-        if launchMode == .debug {
-            // Intercept STDOUT in addition to STDERR
+        if self.isDebugLogsEnabled {
+            // intercept STDOUT in addition to STDERR
             dup2(outputPipe.fileHandleForWriting.fileDescriptor, FileHandle.standardOutput.fileDescriptor)
         }
         
@@ -78,9 +80,12 @@ class OutputObserver {
             
             let output = outputPipe.fileHandleForReading.availableData
             var outputString = String(data: output, encoding: String.Encoding.utf8) ?? ""
+            
+            // necessary to exclude start/finish of test suite/case in final log output
             if (outputString.starts(with: "Test Suite") || outputString.starts(with: "Test Case")){
                 outputString = outputString.components(separatedBy: "started.\n").last ?? ""
             }
+            
             DispatchQueue.main.async(execute: {
                 let previousOutput = self.outputText
                 let nextOutput = previousOutput + outputString
@@ -103,7 +108,10 @@ class OutputObserver {
             self.semaphore.signal()
             
             let logsByLine = self.filterCapturedLogs(output: currentOutput)
-            Artifact.sendLogs(self.testCaseName, logMessages: logsByLine, level: LogLevel.info, timestamp: Date().currentEpochUnixTimestamp())
+            Log.sendLogs(self.testCaseName,
+                         logMessages: logsByLine,
+                         level: LogLevel.info,
+                         timestamp: Date().currentEpochUnixTimestamp())
         }
     }
     
@@ -111,7 +119,10 @@ class OutputObserver {
     /// - Parameter output: captured logs as string
     /// - Returns: array of logs
     private func filterCapturedLogs(output: String) -> [String] {
-        return output.replacingOccurrences(of: "XCTestOutputBarrier", with: "").components(separatedBy: .newlines).filter({ !$0.isEmpty})
+        return output
+            .replacingOccurrences(of: "XCTestOutputBarrier", with: "")
+            .components(separatedBy: .newlines)
+            .filter({ !$0.isEmpty})
     }
     
     /// Subscribes to logs interruption event
@@ -147,12 +158,13 @@ class OutputObserver {
             }
         } else if let issue = notification.object as? XCTIssue {
             queue.sync() {
-                Artifact.sendLogs(self.testCaseName, logMessages: [issue.compactDescription], level: LogLevel.error, timestamp: Date().currentEpochUnixTimestamp())
+                Log.sendLogs(self.testCaseName,
+                             logMessages: [issue.compactDescription],
+                             level: LogLevel.error,
+                             timestamp: Date().currentEpochUnixTimestamp())
             }
         } else if let testCase = notification.object as? XCTestCase {
-            print("Logs collection has been finished for: ", testCase.name)
-        } else {
-            print("Undefined type of notification object, nothing will be performed")
+            // print("Logs collection has been finished for: ", testCase.name)
         }
     }
 }

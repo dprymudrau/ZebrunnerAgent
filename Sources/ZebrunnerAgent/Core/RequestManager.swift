@@ -44,63 +44,50 @@ class RequestManager {
         return prepareRequest(url: url, method: .POST, body: body)
     }
     
-    public func buildStartTestRunRequest(projectKey: String, testRunName: String, startTime: String) -> URLRequest {
+    public func buildStartTestRunRequest(projectKey: String, testRunStartRequest: TestRunStartDTO) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs?projectKey=" + projectKey)!
-        let body: [String: AnyHashable] = [
-            "name": testRunName,
-            "startedAt": startTime,
-            "framework": "XCTest",
-        ]
-        return prepareRequest(url: url, method: .POST, body: body)
+        return prepareRequest(url: url, method: .POST, body: testRunStartRequest)
     }
     
-    public func buildFinishTestRunRequest(testRunId: Int, endTime: String) -> URLRequest {
+    public func buildFinishTestRunRequest(testRunId: Int, testRunFinishRequest: TestRunFinishDTO) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/" + String(testRunId))!
         let body: [String: AnyHashable] = [
-            "endedAt": endTime
+            "endedAt": testRunFinishRequest.endTime
         ]
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    public func buildStartTestRequest(testRunId: Int, testData: TestData, startTime: String) -> URLRequest {
+    public func buildStartTestRequest(testRunId: Int, testCaseStartRequest: TestCaseStartDTO) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests")!
         let body = [
-            "name": testData.name,
-            "className": testData.className,
-            "methodName": testData.methodName,
-            "startedAt": startTime,
-            "maintainer": testData.maintainer,
+            "name": testCaseStartRequest.name,
+            "className": testCaseStartRequest.className,
+            "methodName": testCaseStartRequest.methodName,
+            "startedAt": testCaseStartRequest.startTime,
+            "maintainer": testCaseStartRequest.maintainer,
         ]
-        
         return prepareRequest(url: url, method: .POST, body: body)
     }
     
-    public func buildFinishTestRequest(testRunId: Int, testId: Int, result: TestStatus, reason: String, endTime: String) -> URLRequest {
+    public func buildFinishTestRequest(testRunId: Int, testId: Int, testCaseFinishRequest: TestCaseFinishDTO) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
-        let body: [String: AnyHashable] = [
-            "result": result.rawValue,
-            "reason": reason,
-            "endedAt": endTime
+        var body: [String: AnyHashable] = [
+            "result": testCaseFinishRequest.result.rawValue,
+            "endedAt": testCaseFinishRequest.endTime
         ]
+        if let reason = testCaseFinishRequest.reason {
+            body["reason"] = reason
+        }
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    public func buildFinishTestRequest(testRunId: Int, testId: Int, result: TestStatus, endTime: String) -> URLRequest {
-        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)")!
-        let body: [String: AnyHashable] = [
-            "result": result.rawValue,
-            "endedAt": endTime
-        ]
-        return prepareRequest(url: url, method: .PUT, body: body)
-    }
-    
-    public func buildUpdateTestRequest(testRunId: Int, testId: Int, testData: TestData) -> URLRequest {
+    public func buildUpdateTestRequest(testRunId: Int, testId: Int, testCaseUpdateRequest: TestCaseUpdateDTO) -> URLRequest {
         let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testId)?headless=true")!
         let body = [
-            "name": testData.name,
-            "className": testData.className,
-            "methodName": testData.methodName,
-            "maintainer": testData.maintainer,
+            "name": testCaseUpdateRequest.name,
+            "className": testCaseUpdateRequest.className,
+            "methodName": testCaseUpdateRequest.methodName,
+            "maintainer": testCaseUpdateRequest.maintainer,
         ]
         return prepareRequest(url: url, method: .PUT, body: body)
     }
@@ -150,10 +137,10 @@ class RequestManager {
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
-    private func getBodyForLogs(testId: Int, logMessages: [String], level: LogLevel, timestamp: String) -> [LogDto]{
-        var logs = [LogDto]()
+    private func getBodyForLogs(testId: Int, logMessages: [String], level: LogLevel, timestamp: String) -> [LogDTO]{
+        var logs = [LogDTO]()
         for logMessage in logMessages {
-            logs.append(LogDto(testId: String(testId), level: level, message: logMessage, timestamp: timestamp))
+            logs.append(LogDTO(testId: String(testId), level: level, message: logMessage, timestamp: timestamp))
         }
         return logs
     }
@@ -174,7 +161,7 @@ class RequestManager {
         return AttachmentArtifactDTO(items: artifacts)
     }
     
-    private func prepareRequest(url: URL, method: HttpMethod, body: [LogDto]) -> URLRequest {
+    private func prepareRequest(url: URL, method: HttpMethod, body: [LogDTO]) -> URLRequest {
         let jsonBody = try? JSONEncoder().encode(body)
         return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
     }
@@ -187,6 +174,11 @@ class RequestManager {
     private func prepareRequest(url: URL, method: HttpMethod, body: AttachmentArtifactDTO) -> URLRequest {
         let jsonBody = try? JSONEncoder().encode(body)
         return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: TestRunStartDTO) -> URLRequest {
+        let jsonBody = try? JSONEncoder().encode(body)
+        return prepareRequest(url: url, method: .POST, body: jsonBody, contentType: .json)
     }
     
     private func prepareRequest(url: URL, method: HttpMethod, body: [String: AnyHashable]) -> URLRequest {
