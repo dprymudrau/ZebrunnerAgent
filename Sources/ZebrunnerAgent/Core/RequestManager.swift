@@ -137,6 +137,12 @@ class RequestManager {
         return prepareRequest(url: url, method: .PUT, body: body)
     }
     
+    public func buildTestCaseResultsRequest(testRunId: Int, testCaseId: Int, results: [TcmTestCaseResultDTO]) -> URLRequest {
+        let url = URL(string: baseUrl + "/api/reporting/v1/test-runs/\(testRunId)/tests/\(testCaseId)/test-cases:upsert")!
+        let body = TcmTestCasesDTO(testCases: results)
+        return prepareRequest(url: url, method: .POST, body: body)
+    }
+    
     private func getBodyForLogs(testId: Int, logMessages: [String], level: LogLevel, timestamp: String) -> [LogDTO]{
         var logs = [LogDTO]()
         for logMessage in logMessages {
@@ -159,6 +165,11 @@ class RequestManager {
             artifacts.append(ArtifactDTO(name: name, value: value))
         }
         return AttachmentArtifactDTO(items: artifacts)
+    }
+    
+    private func prepareRequest(url: URL, method: HttpMethod, body: TcmTestCasesDTO) -> URLRequest {
+        let jsonBody = try? JSONEncoder().encode(body)
+        return prepareRequest(url: url, method: method, body: jsonBody, contentType: .json)
     }
     
     private func prepareRequest(url: URL, method: HttpMethod, body: [LogDTO]) -> URLRequest {

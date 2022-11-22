@@ -72,7 +72,8 @@ The following configuration parameters are recognized by the agent:
 2. `Label` - you can use static methods from this class to add Labels to test cases and test runs
 3. `Locale` - provides a method to add a locale to test run
 4. `Log` - provides a possibility to send log messages to test case
-3. `Screenshot` - helps when you need to attach a screenshot to test case
+5. `Screenshot` - helps when you need to attach a screenshot to test case
+6. `TestRail`, `Xray`, `Zephyr` - performs syncing test executions with external Test Case Managements systems
 
 ## Test maintainer
 If you wish to assign a test maintainer for your test case, you can set maintainer's Zebrunner username value to `testMaintainer` variable in test case:
@@ -122,3 +123,95 @@ _Not intercepted if REPORTING_DEBUG_LOGS_ENABLED/ReportingDebugLogsEnabled is `f
 Debugging functions from Swift Standard Library: print, debugPrint and dump.
 
 All log types above are intercepted if _REPORTING_DEBUG_LOGS_ENABLED/ReportingDebugLogsEnabled is `true`_
+
+## Test Case Management systems
+
+Zebrunner provides an ability to upload test results to external TCMs on test run finish. For some TCMs it is possible to upload results in real-time during the test run execution.
+
+Currently, Zebrunner supports TestRail, Xray, Zephyr Squad and Zephyr Scale test case management systems.
+
+For successful upload of test run results in specific TCM system, two steps must be performed:
+
+1. Integration with this TCM system is configured and enabled for Zebrunner project;
+2. Configuration is performed on the tests side.
+
+**NOTE**: basic configuration for all TCM systems must be invoked before all tests. For XCTest framework, it should be located inside `override class func setUp()` of first test class (sorted alphabetically) of your Test Target.
+In case of running all tests from different Test Targets (e.g. unit and UI), configuration should be done in first test class of each Test Target.
+
+### TestRail
+
+Zebrunner agent has a special `TestRail` class with a bunch of methods to control results upload:
+
+- `#setSuiteId(String)` - mandatory. The method sets TestRail suite id for current test run. This method must be invoked before all tests;
+- `#setTestCaseId(String)` - mandatory. Using this mechanism you can set TestRail's case associated with specific automated test
+- `#disableSync()` - optional. Disables result upload. Same as `#setSuiteId(String)`, this method must be invoked before all tests;
+- `#includeAllTestCasesInNewRun()` - optional. Includes all cases from suite into newly created run in TestRail. Same as `#setSuiteId(String)`, this method must be invoked before all tests;
+- `#enableRealTimeSync()` - optional. Enables real-time results upload. In this mode, result of test execution will be uploaded immediately after test finish. This method also automatically invokes `#includeAllTestCasesInNewRun()`. Same as `#setSuiteId(String)`, this method must be invoked before all tests;
+- `#setRunId(String)` - optional. Adds result into existing TestRail run. If not provided, test run is treated as new. Same as `#setSuiteId(String)`, this method must be invoked before all tests;
+- `#setRunName(String)` - optional. Sets custom name for new TestRail run. By default, Zebrunner test run name is used. Same as `#setSuiteId(String)`, this method must be invoked before all tests;
+- `#setMilestone(String)` - optional. Adds result in TestRail milestone with the given name. Same as `#setSuiteId(String)`, this method must be invoked before all tests;
+- `#setAssignee(String)` - optional. Sets TestRail run assignee - should be email of existing TestRail user. Same as `#setSuiteId(String)`, this method must be invoked before all tests.
+
+By default, a new run containing only cases assigned to the tests will be created in TestRail on test run finish.
+
+```
+override class func setUp() {
+    TestRail.setSuiteId(suiteId: "1000")
+    TestRail.enableRealTimeSync()
+    TestRail.setRunName(runName: "XCUI tests")
+    TestRail.setAssignee(assignee: "anytestrailuser@xtest.com")
+    TestRail.setMilestone(milestone: "TestRail milestone")
+}
+    
+func testSmth() {
+    TestRail.setTestCaseId(testCaseId: "10000")
+    ...
+}
+```
+
+### Xray
+
+Zebrunner agent has a special `Xray` class with a bunch of methods to control results upload:
+
+- `#setExecutionKey(String)` - mandatory. The method sets Xray execution key. This method must be invoked before all tests;
+- `#setTestKey(String)` - mandatory. Using these mechanisms you can set test keys associated with specific automated test;
+- `#disableSync()` - optional. Disables result upload. Same as `#setExecutionKey(String)`, this method must be invoked before all tests;
+- `#enableRealTimeSync()` - optional. Enables real-time results upload. In this mode, result of test execution will be uploaded immediately after test finish. Same as `#setExecutionKey(String)`, this method must be invoked before all tests.
+
+By default, results will be uploaded to Xray on test run finish.
+
+```
+override class func setUp() {
+    Xray.setExecutionKey(key: "ZBR-42")
+    Xray.enableRealTimeSync()
+}
+    
+func testSmth() {
+    Xray.setTestKey(testKey: "ZBR-20000")
+    ...
+}
+```
+
+### Zephyr Squad & Zephyr Scale
+
+Zebrunner agent has a special `Zephyr` class with a bunch of methods to control results upload:
+
+- `#setTestCycleKey(String)` - mandatory. The method sets Zephyr test cycle key. This method must be invoked before all tests;
+- `#setJiraProjectKey(String)` - mandatory. Sets Zephyr Jira project key. Same as `#setTestCycleKey(String)`, this method must be invoked before all tests;
+- `#setTestCaseKey(String)` - mandatory. Using these mechanisms you can set test case keys associated with specific automated test;
+- `#disableSync()` - optional. Disables result upload. Same as `#setTestCycleKey(String)`, this method must be invoked before all tests;
+- `#enableRealTimeSync()` - optional. Enables real-time results upload. In this mode, result of test execution will be uploaded immediately after test finish. Same as `#setTestCycleKey(String)`, this method must be invoked before all tests.
+
+By default, results will be uploaded to Zephyr on test run finish.
+
+```
+override class func setUp() {
+    Zephyr.setTestCycleKey(testKey: "ZBR-R42")
+    Zephyr.setJiraProjectKey(jiraKey: "ZBR")
+}
+    
+func testSmth() {
+    Zephyr.setTestCaseKey(testCaseKey: "ZBR-T20000")
+    ...
+}
+```

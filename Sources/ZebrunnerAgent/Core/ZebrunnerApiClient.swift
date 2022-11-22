@@ -13,8 +13,6 @@ public class ZebrunnerApiClient {
     private static var instance: ZebrunnerApiClient?
     private var requestMgr: RequestManager!
     private var configuration: Configuration!
-    private var testRunResponse: TestRunStartResponse?
-    private var testCasesExecuted: [String: Int] = [:]
     
     private init(configuration: Configuration) {
         self.configuration = configuration
@@ -44,7 +42,6 @@ public class ZebrunnerApiClient {
         let request = self.requestMgr.buildAuthRequest()
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         
-        //Check if data exists and can be mapped
         guard let data = data else {
             print("Failed to authenticate: \(String(describing: error?.localizedDescription))")
             return nil
@@ -69,7 +66,7 @@ public class ZebrunnerApiClient {
             return
         }
         if let testRunStartResponse = try? JSONDecoder().decode(TestRunStartResponse.self, from: data) {
-            self.testRunResponse = testRunStartResponse
+            RunContext.getInstance().setTestRunId(testRunId: testRunStartResponse.id)
         }
     }
     
@@ -78,20 +75,20 @@ public class ZebrunnerApiClient {
     ///  - Parameters:
     ///   - testRunFinishRequest: details to finish test run
     public func finishTestRun(testRunFinishRequest: TestRunFinishDTO) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+        guard let id = getTestRunId() else {
             return
         }
         let request = requestMgr.buildFinishTestRunRequest(testRunId: id, testRunFinishRequest: testRunFinishRequest)
         _ = URLSession.shared.syncRequest(with: request)
+        
+        RunContext.getInstance().finishTestRun()
     }
     
     /// Starts test case execution in given test run on Zebrunner
     ///  - Parameters:
     ///     - testCaseStartRequest: details to start test case
     public func startTest(testCaseStartRequest: TestCaseStartDTO) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+        guard let id = getTestRunId() else {
             return
         }
         let request = requestMgr.buildStartTestRequest(testRunId: id, testCaseStartRequest: testCaseStartRequest)
@@ -105,7 +102,8 @@ public class ZebrunnerApiClient {
             return
         }
         
-        self.testCasesExecuted[testCaseStartResponse.name] = testCaseStartResponse.id
+        RunContext.getInstance().addTestCase(testCaseName: testCaseStartResponse.name,
+                                             testCaseId: testCaseStartResponse.id)
     }
     
     /// Finishes test case on Zebrunner with the reason of the result
@@ -113,25 +111,27 @@ public class ZebrunnerApiClient {
     ///     - testCaseName: test case name
     ///     - testCaseFinishRequest: details to finish test case
     public func finishTest(testCaseName: String, testCaseFinishRequest: TestCaseFinishDTO) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
         let request = requestMgr.buildFinishTestRequest(testRunId: id,
-                                                        testId: self.testCasesExecuted[testCaseName]!,
+                                                        testId: testCaseId,
                                                         testCaseFinishRequest: testCaseFinishRequest)
         _ = URLSession.shared.syncRequest(with: request)
+        
+        RunContext.getInstance().finishTestCase()
     }
     
     /// Updates test case data on Zebrunner
     ///  - Parameters:
     ///    - testCaseUpdateRequest: details to update test case
     public func updateTest(testCaseUpdateRequest: TestCaseUpdateDTO) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseUpdateRequest.name) else {
             return
         }
-        let request = requestMgr.buildUpdateTestRequest(testRunId: id, testId: self.testCasesExecuted[testCaseUpdateRequest.name]!, testCaseUpdateRequest: testCaseUpdateRequest)
+        let request = requestMgr.buildUpdateTestRequest(testRunId: id, testId: testCaseId, testCaseUpdateRequest: testCaseUpdateRequest)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
@@ -141,12 +141,16 @@ public class ZebrunnerApiClient {
     ///   - logMessages: log messages to send
     ///   - level: log level of log messages
     ///   - timestamp: timestamp for log messages
-    public func sendLogs(testCaseName: String, logMessages: [String], level: LogLevel, timestamp: String){
-        guard let testCaseId = testCasesExecuted[testCaseName] else {
-            print("There is no test case found in test run \(String(describing: testRunResponse))")
+    public func sendLogs(testCaseName: String, logMessages: [String], level: LogLevel, timestamp: String) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        let request = requestMgr.buildLogRequest(testRunId: getTestRunId(), testId: testCaseId, logMessages: logMessages, level: level, timestamp: timestamp)
+        let request = requestMgr.buildLogRequest(testRunId: id,
+                                                 testId: testCaseId,
+                                                 logMessages: logMessages,
+                                                 level: level,
+                                                 timestamp: timestamp)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
@@ -155,11 +159,11 @@ public class ZebrunnerApiClient {
     ///     - testCaseName: name of test case to attach screenshot
     ///     - screenshot: png representation of screenshot
     public func sendScreenshot(_ testCaseName: String, screenshot: Data?) {
-        guard let testCaseId = testCasesExecuted[testCaseName] else {
-            print("There is no test case found in test run \(String(describing: testRunResponse))")
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        let request = requestMgr.buildScreenshotRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildScreenshotRequest(testRunId: id,
                                                         testId: testCaseId,
                                                         screenshot: screenshot)
         _ = URLSession.shared.syncRequest(with: request)
@@ -171,16 +175,15 @@ public class ZebrunnerApiClient {
     ///   - artifact: binary data of an artifact
     ///   - name: artifact name
     public func sendTestCaseArtifact(for testCaseName: String, with artifact: Data?, name: String) {
-        guard let testCaseId = testCasesExecuted[testCaseName] else {
-            print("There is no test case found in test run \(String(describing: testRunResponse))")
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
         guard let data = artifact else {
             print("There is no data to attach")
             return
         }
-        
-        let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: id,
                                                                testCaseId: testCaseId,
                                                                artifact: data,
                                                                name: name)
@@ -192,11 +195,14 @@ public class ZebrunnerApiClient {
     ///   - artifact: binary data of an artifact
     ///   - name: artifact name
     public func sendTestRunArtifact(artifact: Data?, name: String) {
+        guard let id = getTestRunId() else {
+            return
+        }
         guard let data = artifact else {
             print("There is no data to attach")
             return
         }
-        let request = requestMgr.buildTestRunArtifactsRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestRunArtifactsRequest(testRunId: id,
                                                               artifact: data,
                                                               name: name)
         _ = URLSession.shared.syncRequest(with: request)
@@ -207,11 +213,11 @@ public class ZebrunnerApiClient {
     ///   - testCaseName: name of test case to attach artifact reference
     ///   - references: array with key-value pairs: name of the reference and its value
     public func sendTestCaseArtifactReference(testCaseName: String, references: [String: String]) {
-        guard let testCaseId = testCasesExecuted[testCaseName] else {
-            print("There is no test case found in test run \(String(describing: testRunResponse))")
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        let request = requestMgr.buildTestCaseArtifactReferencesRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestCaseArtifactReferencesRequest(testRunId: id,
                                                                         testCaseId: testCaseId,
                                                                         references: references)
         _ = URLSession.shared.syncRequest(with: request)
@@ -221,18 +227,19 @@ public class ZebrunnerApiClient {
     /// - Parameters:
     ///   - references: array with key-value pairs: name of the reference and its value
     public func sendTestRunArtifactReferences(references: [String: String]) {
-        let request = requestMgr.buildTestRunArtifactReferencesRequest(testRunId: getTestRunId(), references: references)
+        guard let id = getTestRunId() else {
+            return
+        }
+        let request = requestMgr.buildTestRunArtifactReferencesRequest(testRunId: id, references: references)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
     /// Attaches an array of labels to test run
     /// - Parameter labels: array with key-value pairs: name of the label and its value
     public func sendTestRunLabels(_ labels: [String: String]) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+        guard let id = getTestRunId() else {
             return
         }
-        
         let request = requestMgr.buildTestRunLabelsRequest(testRunId: id, labels: labels)
         _ = URLSession.shared.syncRequest(with: request)
     }
@@ -241,25 +248,47 @@ public class ZebrunnerApiClient {
     /// - Parameter testCaseName: test case name
     /// - Parameter labels: array with key-value pairs: name of the label and its value
     public func sendTestCaseLabels(for testCaseName: String, labels: [String: String]) {
-        guard let testCaseId = testCasesExecuted[testCaseName] else {
-            print("There is no test case found in test run \(String(describing: testRunResponse))")
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        let request = requestMgr.buildTestCaseLabelsRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestCaseLabelsRequest(testRunId: id,
                                                             testCaseId: testCaseId,
                                                             labels: labels
         )
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    private func getTestRunId() -> Int {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id or test case id found \(String(describing: testRunResponse))")
-            return 0
+    /// Updates results for given test cases for given TCM
+    /// - Parameters:
+    ///   - testCaseName: test case name
+    ///   - results: array of objects that contain information of TCM type, TCM test case ids and their results
+    public func updateTestCaseResults(for testCaseName: String, results: [TcmTestCaseResultDTO]) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
+            return
+        }
+        let request = requestMgr.buildTestCaseResultsRequest(testRunId: id,
+                                                             testCaseId: testCaseId,
+                                                             results: results)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    private func getTestRunId() -> Int? {
+        guard let id = RunContext.getInstance().getTestRunId() else {
+            print("There is no test run id found")
+            return nil
         }
         return id
     }
     
+    private func getTestCaseId(testCaseName: String) -> Int? {
+        guard let testCaseId = RunContext.getInstance().getTestCaseId(testCaseName: testCaseName) else {
+            print("There is no test case found \(testCaseName)")
+            return nil
+        }
+        return testCaseId
+    }
 }
 
 // Extension of URLSesssion to execute synchronous requests
@@ -283,7 +312,7 @@ extension URLSession {
         dispatchGroup.enter()
         task.resume()
         dispatchGroup.wait()
-        
+                
         // Check if response status code out of 200s
         if let httpResponse = response as? HTTPURLResponse,
            !(200...299).contains(httpResponse.statusCode) {
