@@ -141,7 +141,7 @@ For successful upload of test run results in specific TCM system, two steps must
 1. Integration with this TCM system is configured and enabled for Zebrunner project;
 2. Configuration is performed on the tests side.
 
-**NOTE**: basic configuration for all TCM systems must be invoked before all tests. For XCTest framework, it should be located inside `override class func setUp()` of *first test class of your Test Target (when tests are executing, the are sorted alphabetically)*.
+**NOTE**: basic configuration for all TCM systems must be invoked before all tests. For XCTest framework, it should be located inside `override class func setUp()` of *first test class of your Test Target (when tests are executing, they are sorted alphabetically)*.
 In case of running all tests from different Test Targets (e.g. unit and UI), configuration should be done in first test class of each Test Target.
 
 ### TestRail
