@@ -24,9 +24,9 @@ class EnvironmentConfigurationProvider: ConfigurationProtocol {
         static let runLocale = "REPORTING_RUN_LOCALE"
         
         static let runTreatSkipsAsFailures = "REPORTING_RUN_TREAT_SKIPS_AS_FAILURES"
-        //static let runTestCaseStatusOnPass = "REPORTING_RUN_TEST_CASE_STATUS_ON_PASS"
-        //static let runTestCaseStatusOnFail = "REPORTING_RUN_TEST_CASE_STATUS_ON_FAIL"
-        //static let runTestCaseStatusOnSkip = "REPORTING_RUN_TEST_CASE_STATUS_ON_SKIP"
+        static let runTestCaseStatusOnPass = "REPORTING_RUN_TEST_CASE_STATUS_ON_PASS"
+        static let runTestCaseStatusOnFail = "REPORTING_RUN_TEST_CASE_STATUS_ON_FAIL"
+        static let runTestCaseStatusOnSkip = "REPORTING_RUN_TEST_CASE_STATUS_ON_SKIP"
         
         static let notificationNotifyOnEachFailure = "REPORTING_NOTIFICATION_NOTIFY_ON_EACH_FAILURE"
         static let notificationSlackChannels = "REPORTING_NOTIFICATION_SLACK_CHANNELS"
@@ -80,6 +80,15 @@ class EnvironmentConfigurationProvider: ConfigurationProtocol {
         }
         if let isDebugLogsEnabled = getEnvironmentVariable(EnvironmentVariable.debugLogsEnabled) {
             configuration.isDebugLogsEnabled = (isDebugLogsEnabled == "true")
+        }
+        if let testCaseStatusOnPass = getEnvironmentVariable(EnvironmentVariable.runTestCaseStatusOnPass) {
+            configuration.testCaseStatusOnPass = testCaseStatusOnPass
+        }
+        if let testCaseStatusOnFail = getEnvironmentVariable(EnvironmentVariable.runTestCaseStatusOnFail) {
+            configuration.testCaseStatusOnFail = testCaseStatusOnFail
+        }
+        if let testCaseStatusOnSkip = getEnvironmentVariable(EnvironmentVariable.runTestCaseStatusOnSkip) {
+            configuration.testCaseStatusOnSkip = testCaseStatusOnSkip
         }
         return configuration
     }
@@ -144,9 +153,9 @@ class PropertiesConfigurationProvider: ConfigurationProtocol {
         static let runLocale = "ReportingRunLocale"
         
         static let runTreatSkipsAsFailures = "ReportingRunTreatSkipsAsFailures"
-        //static let runTestCaseStatusOnPass = "ReportingRunTestCaseStatusOnPass"
-        //static let runTestCaseStatusOnFail = "ReportingRunTestCaseStatusOnFail"
-        //static let runTestCaseStatusOnSkip = "ReportingRunTestCaseStatusOnSkip"
+        static let runTestCaseStatusOnPass = "ReportingRunTestCaseStatusOnPass"
+        static let runTestCaseStatusOnFail = "ReportingRunTestCaseStatusOnFail"
+        static let runTestCaseStatusOnSkip = "ReportingRunTestCaseStatusOnSkip"
         
         static let notificationNotifyOnEachFailure = "ReportingNotificationNotifyOnEachFailure"
         static let notificationSlackChannels = "ReportingNotificationSlackChannels"
@@ -200,6 +209,15 @@ class PropertiesConfigurationProvider: ConfigurationProtocol {
         }
         if let isDebugLogsEnabled = bundleProperties[Property.debugLogsEnabled] as? Bool {
             configuration.isDebugLogsEnabled = isDebugLogsEnabled
+        }
+        if let testCaseStatusOnPass = bundleProperties[Property.runTestCaseStatusOnPass] as? String {
+            configuration.testCaseStatusOnPass = testCaseStatusOnPass
+        }
+        if let testCaseStatusOnFail = bundleProperties[Property.runTestCaseStatusOnFail] as? String {
+            configuration.testCaseStatusOnFail = testCaseStatusOnFail
+        }
+        if let testCaseStatusOnSkip = bundleProperties[Property.runTestCaseStatusOnSkip] as? String {
+            configuration.testCaseStatusOnSkip = testCaseStatusOnSkip
         }
         return configuration
     }

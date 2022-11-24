@@ -56,18 +56,20 @@ public class ZebrunnerApiClient {
     
     /// Creates a new test run on Zebrunner
     /// - Parameter testRunStartRequest: details to start test run
-    public func startTestRun(testRunStartRequest: TestRunStartDTO) {
+    public func startTestRun(testRunStartRequest: TestRunStartDTO) -> TestRunStartResponse? {
         let request = requestMgr.buildStartTestRunRequest(projectKey: configuration.projectKey,
                                                           testRunStartRequest: testRunStartRequest)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         
         guard let data = data else {
             print("Failed to create Test Run: \(String(describing: error?.localizedDescription))")
-            return
+            return nil
         }
-        if let testRunStartResponse = try? JSONDecoder().decode(TestRunStartResponse.self, from: data) {
-            RunContext.getInstance().setTestRunId(testRunId: testRunStartResponse.id)
+        guard let testRunStartResponse = try? JSONDecoder().decode(TestRunStartResponse.self, from: data) else {
+            print("Failed to map start test run response into TestRunStartResponse from: \(data)")
+            return nil
         }
+        return testRunStartResponse
     }
     
     
@@ -80,30 +82,26 @@ public class ZebrunnerApiClient {
         }
         let request = requestMgr.buildFinishTestRunRequest(testRunId: id, testRunFinishRequest: testRunFinishRequest)
         _ = URLSession.shared.syncRequest(with: request)
-        
-        RunContext.getInstance().finishTestRun()
     }
     
     /// Starts test case execution in given test run on Zebrunner
     ///  - Parameters:
     ///     - testCaseStartRequest: details to start test case
-    public func startTest(testCaseStartRequest: TestCaseStartDTO) {
+    public func startTest(testCaseStartRequest: TestCaseStartDTO) -> TestCaseStartResponse? {
         guard let id = getTestRunId() else {
-            return
+            return nil
         }
         let request = requestMgr.buildStartTestRequest(testRunId: id, testCaseStartRequest: testCaseStartRequest)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         guard let data = data else {
             print("Failed to create test case execution: \(String(describing: error?.localizedDescription))")
-            return
+            return nil
         }
         guard let testCaseStartResponse = try? JSONDecoder().decode(TestCaseStartResponse.self, from: data) else {
             print("Failed to map start test case response into TestCaseStartResponse from: \(data)")
-            return
+            return nil
         }
-        
-        RunContext.getInstance().addTestCase(testCaseName: testCaseStartResponse.name,
-                                             testCaseId: testCaseStartResponse.id)
+        return testCaseStartResponse
     }
     
     /// Finishes test case on Zebrunner with the reason of the result
@@ -119,8 +117,6 @@ public class ZebrunnerApiClient {
                                                         testId: testCaseId,
                                                         testCaseFinishRequest: testCaseFinishRequest)
         _ = URLSession.shared.syncRequest(with: request)
-        
-        RunContext.getInstance().finishTestCase()
     }
     
     /// Updates test case data on Zebrunner
@@ -261,11 +257,10 @@ public class ZebrunnerApiClient {
     
     /// Updates results for given test cases for given TCM
     /// - Parameters:
-    ///   - testCaseName: test case name
+    ///   - testCaseId: test case id
     ///   - results: array of objects that contain information of TCM type, TCM test case ids and their results
-    public func updateTestCaseResults(for testCaseName: String, results: [TcmTestCaseResultDTO]) {
-        guard let id = getTestRunId(),
-              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
+    public func upsertTestCaseResults(for testCaseId: Int, results: [TcmTestCaseResultDTO]) {
+        guard let id = getTestRunId() else {
             return
         }
         let request = requestMgr.buildTestCaseResultsRequest(testRunId: id,
@@ -312,7 +307,7 @@ extension URLSession {
         dispatchGroup.enter()
         task.resume()
         dispatchGroup.wait()
-                
+        
         // Check if response status code out of 200s
         if let httpResponse = response as? HTTPURLResponse,
            !(200...299).contains(httpResponse.statusCode) {

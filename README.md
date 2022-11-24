@@ -43,6 +43,9 @@ The following configuration parameters are recognized by the agent:
 - `REPORTING_MILESTONE_ID` - optional value. Id of the Zebrunner milestone to link the suite execution to. The id is not displayed on Zebrunner UI, so the field is basically used for internal purposes. If the milestone does not exist, appropriate warning message will be displayed in logs, but the test suite will continue executing;
 - `REPORTING_MILESTONE_NAME` - optional value. Name of the Zebrunner milestone to link the suite execution to. If the milestone does not exist, appropriate warning message will be displayed in logs, but the test suite will continue executing;
 - `REPORTING_DEBUG_LOGS_ENABLED` - optional value. The default value is `false` that means that debugging functions from Swift Standard Library such as `print, debugPrint and dump` will not be displayed in log output.
+- `REPORTING_RUN_TEST_CASE_STATUS_ON_PASS` - optional value. If automated tests are associated with test cases from a TCM system (TestRail, Xray, Zephyr) and there is a setting to push the execution results to the TCM, then this config determines what status will be set for a passed test.
+- `REPORTING_RUN_TEST_CASE_STATUS_ON_FAIL` - optional value. If automated tests are associated with test cases from a TCM system (TestRail, Xray, Zephyr) and there is a setting to push the execution results to the TCM, then this config determines what status will be set for a failed test.
+- `REPORTING_RUN_TEST_CASE_STATUS_ON_SKIP` - optional value. If automated tests are associated with test cases from a TCM system (TestRail, Xray, Zephyr) and there is a setting to push the execution results to the TCM, then this config determines what status will be set for a skipped test.
 
 ### Info.plist properties
 
@@ -65,6 +68,9 @@ The following configuration parameters are recognized by the agent:
 - `ReportingMilestoneId` - optional value. Id of the Zebrunner milestone to link the suite execution to. The id is not displayed on Zebrunner UI, so the field is basically used for internal purposes. If the milestone does not exist, appropriate warning message will be displayed in logs, but the test suite will continue executing;
 - `ReportingMilestoneName` - optional value. Name of the Zebrunner milestone to link the suite execution to. If the milestone does not exist, appropriate warning message will be displayed in logs, but the test suite will continue executing;
 - `ReportingDebugLogsEnabled` - optional value. The default value is `false` that means that debugging functions from Swift Standard Library such as `print, debugPrint and dump` will not be displayed in log output.
+- `ReportingRunTestCaseStatusOnPass` - optional value. If automated tests are associated with test cases from a TCM system (TestRail, Xray, Zephyr) and there is a setting to push the execution results to the TCM, then this config determines what status will be set for a passed test.
+- `ReportingRunTestCaseStatusOnFail` - optional value. If automated tests are associated with test cases from a TCM system (TestRail, Xray, Zephyr) and there is a setting to push the execution results to the TCM, then this config determines what status will be set for a failed test.
+- `ReportingRunTestCaseStatusOnSkip` - optional value. If automated tests are associated with test cases from a TCM system (TestRail, Xray, Zephyr) and there is a setting to push the execution results to the TCM, then this config determines what status will be set for a skipped test.
 
 
 ## Useful classes
@@ -73,7 +79,7 @@ The following configuration parameters are recognized by the agent:
 3. `Locale` - provides a method to add a locale to test run
 4. `Log` - provides a possibility to send log messages to test case
 5. `Screenshot` - helps when you need to attach a screenshot to test case
-6. `TestRail`, `Xray`, `Zephyr` - performs syncing test executions with external Test Case Managements systems
+6. `TestRail`, `Xray`, `Zephyr` - performs syncing test executions with external Test Case Management systems
 
 ## Test maintainer
 If you wish to assign a test maintainer for your test case, you can set maintainer's Zebrunner username value to `testMaintainer` variable in test case:
@@ -135,7 +141,7 @@ For successful upload of test run results in specific TCM system, two steps must
 1. Integration with this TCM system is configured and enabled for Zebrunner project;
 2. Configuration is performed on the tests side.
 
-**NOTE**: basic configuration for all TCM systems must be invoked before all tests. For XCTest framework, it should be located inside `override class func setUp()` of first test class (sorted alphabetically) of your Test Target.
+**NOTE**: basic configuration for all TCM systems must be invoked before all tests. For XCTest framework, it should be located inside `override class func setUp()` of *first test class of your Test Target (when tests are executing, the are sorted alphabetically)*.
 In case of running all tests from different Test Targets (e.g. unit and UI), configuration should be done in first test class of each Test Target.
 
 ### TestRail

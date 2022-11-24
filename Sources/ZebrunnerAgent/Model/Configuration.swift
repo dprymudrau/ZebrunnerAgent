@@ -19,6 +19,9 @@ public struct Configuration {
     var notifications: Notifications?
     var isDebugLogsEnabled: Bool = false
     var skipsAsFailures: Bool = true
+    var testCaseStatusOnPass: String?
+    var testCaseStatusOnFail: String?
+    var testCaseStatusOnSkip: String?
     
     public init(isReportingEnabled: Bool) {
         self.isReportingEnabled = isReportingEnabled

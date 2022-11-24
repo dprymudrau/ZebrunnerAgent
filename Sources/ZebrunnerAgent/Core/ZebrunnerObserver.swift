@@ -12,7 +12,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     
     private var zebrunnerClient: ZebrunnerApiClient!
     private var testSuiteDictionary: [String: [XCTest]] = [:]
-    private var outputObserver: OutputObserver!
+    private var registrationObserver: RegistrationObserver!
     private var configuration: Configuration!
     
     public override init() {
@@ -44,17 +44,17 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         }
         
         zebrunnerClient = ZebrunnerApiClient.setUp(configuration: configuration)
-        outputObserver = OutputObserver(isDebugLogsEnabled: configuration.isDebugLogsEnabled)
+        registrationObserver = RegistrationObserver.setUp(configuration: configuration)
         
         let requestData = TestRunStartDTO(name: configuration.displayName,
                                           startTime: Date().toString(),
                                           config: configuration.config,
                                           milestone: configuration.milestone,
                                           notifications: configuration.notifications)
-        zebrunnerClient.startTestRun(testRunStartRequest: requestData)
-        
-        if let locale = configuration.locale {
-            Locale.setLocale(localeValue: locale)
+        if let response = zebrunnerClient.startTestRun(testRunStartRequest: requestData) {
+            RunContext.getInstance().setTestRunId(testRunId: response.id)
+            
+            updateLocale(locale: configuration.locale)
         }
     }
     
@@ -69,13 +69,18 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseWillStart(_ testCase: XCTestCase) {
+        registrationObserver.onBeforeTestStart(testCase)
+        
         let requestData = TestCaseStartDTO(name: testCase.name,
                                            className: getTestSuiteName(for: testCase),
                                            methodName: testCase.name,
                                            startTime: Date().toString())
-        zebrunnerClient.startTest(testCaseStartRequest: requestData)
+        if let response = zebrunnerClient.startTest(testCaseStartRequest: requestData) {
+            RunContext.getInstance().addTestCase(testCaseName: response.name,
+                                                 testCaseId: response.id)
+        }
         
-        startLogsCapture(testCase)
+        registrationObserver.onAfterTestStart(testCase)
     }
     
     /// Executes when test case fails
@@ -83,9 +88,9 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     ///    - testCase: object of XCTestCase with data about executed test case
     ///    - issue: contains data about issue that causes a fail
     public func testCase(_ testCase: XCTestCase, didRecord issue: XCTIssue) {
-        suspendLogsCapture(issue)
-        updateMaintainer(testCase)
+        registrationObserver.onBeforeTestFail(issue: issue)
         
+        updateMaintainer(testCase)
         var failureDescription: String
         if let reason = issue.detailedDescription {
             failureDescription = reason
@@ -96,26 +101,29 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
                                             endTime: Date().toString(),
                                             reason: failureDescription)
         zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
+        
+        registrationObserver.onAfterTestFail(issue: issue)
     }
     
     /// Executes after finish of test case
     ///  - Parameters:
     ///     - testCase: object of XCTestCase with data about executed test case
     public func testCaseDidFinish(_ testCase: XCTestCase) {
-        finishLogsCapture(testCase)
-        updateMaintainer(testCase)
+        registrationObserver.onBeforeTestFinish(testCase)
         
-        if testCase.testRun!.hasSucceeded && !testCase.testRun!.hasBeenSkipped {
-            let requestData = TestCaseFinishDTO(result: TestStatus.passed,
+        updateMaintainer(testCase)
+        if testCase.testRun!.hasSucceeded {
+            var status = TestStatus.passed
+            if testCase.testRun!.hasBeenSkipped {
+                status = configuration.skipsAsFailures ? TestStatus.failed : TestStatus.skipped
+            }
+            let requestData = TestCaseFinishDTO(result: status,
                                                 endTime: Date().toString())
             zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
         }
-        if testCase.testRun!.hasBeenSkipped {
-            let result = configuration.skipsAsFailures ? TestStatus.failed : TestStatus.skipped
-            let requestData = TestCaseFinishDTO(result: result,
-                                                endTime: Date().toString())
-            zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
-        }
+        RunContext.getInstance().finishTestCase()
+        
+        registrationObserver.onAfterTestFinish(testCase)
     }
     
     /// Executes after Test Class finished execution
@@ -132,6 +140,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     public func testBundleDidFinish(_ testBundle: Bundle) {
         let requestData = TestRunFinishDTO(endTime: Date().toString())
         zebrunnerClient.finishTestRun(testRunFinishRequest: requestData)
+        RunContext.getInstance().finishTestRun()
     }
     
     
@@ -160,20 +169,11 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         zebrunnerClient.updateTest(testCaseUpdateRequest: requestData)
     }
     
-    /// Notifies OutputObserver that test case has an error and reports it
-    /// - Parameter issue: caused issue of failed test case
-    private func suspendLogsCapture(_ issue: XCTIssue){
-        NotificationCenter.default.post(name: .interruptionInCapturedLogs, object: issue)
-    }
-    
-    /// Starts capturing console output for test case. Should be called on testCaseWillStart event
-    /// - Parameter testCase: object of executed test case
-    private func startLogsCapture(_ testCase: XCTestCase) {
-        outputObserver.startLogsCapture(testCase: testCase)
-    }
-    /// Finishes capturing console output. Should be called on testCaseDidFinish event
-    /// - Parameter testCase: object of executed test case
-    private func finishLogsCapture(_ testCase: XCTestCase) {
-        outputObserver.finishLogsCapture(testCase: testCase)
+    /// Updates locale for test run
+    /// - Parameter locale: locale
+    private func updateLocale(locale: String?) {
+        if let locale = locale {
+            Locale.setLocale(localeValue: locale)
+        }
     }
 }
