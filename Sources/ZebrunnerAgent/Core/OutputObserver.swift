@@ -111,7 +111,7 @@ class OutputObserver {
             Log.sendLogs(self.testCaseName,
                          logMessages: logsByLine,
                          level: LogLevel.info,
-                         timestamp: Date().currentEpochUnixTimestamp())
+                         timestamp: Date().toUnixTimestampMillisec())
         }
     }
     
@@ -161,7 +161,7 @@ class OutputObserver {
                 Log.sendLogs(self.testCaseName,
                              logMessages: [issue.compactDescription],
                              level: LogLevel.error,
-                             timestamp: Date().currentEpochUnixTimestamp())
+                             timestamp: Date().toUnixTimestampMillisec())
             }
         } else if let testCase = notification.object as? XCTestCase {
             // print("Logs collection has been finished for: ", testCase.name)

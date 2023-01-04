@@ -324,19 +324,19 @@ extension URLSession {
 
 extension Date {
     
-    /// Returns Date in ISO8601 timestamp with an offset from UTC
+    /// Returns formatted date as a string in ISO8601 timestamp with an offset from UTC
     /// - Parameter format: date format
-    /// - Returns: String date
-    func toString(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ") -> String {
+    /// - Returns: formatted String
+    func toISO8601FormattedString(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ") -> String {
         let df = DateFormatter()
         df.dateFormat = format
         return df.string(from: self)
     }
     
-    /// Returns current epoch unix timestamp  with millisecond-precision
+    /// Returns epoch unix timestamp with millisecond-precision
     /// - Returns: String timestamp
-    func currentEpochUnixTimestamp() -> String {
-        let timestamp = Int(Date().timeIntervalSince1970 * 1_000)
+    func toUnixTimestampMillisec() -> String {
+        let timestamp = Int(self.timeIntervalSince1970 * 1_000)
         return String(timestamp)
     }
 }

@@ -47,7 +47,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         registrationObserver = RegistrationObserver.setUp(configuration: configuration)
         
         let requestData = TestRunStartDTO(name: configuration.displayName,
-                                          startTime: Date().toString(),
+                                          startTime: Date().toISO8601FormattedString(),
                                           config: configuration.config,
                                           milestone: configuration.milestone,
                                           notifications: configuration.notifications)
@@ -74,7 +74,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
         let requestData = TestCaseStartDTO(name: testCase.name,
                                            className: getTestSuiteName(for: testCase),
                                            methodName: testCase.name,
-                                           startTime: Date().toString())
+                                           startTime: Date().toISO8601FormattedString())
         if let response = zebrunnerClient.startTest(testCaseStartRequest: requestData) {
             RunContext.getInstance().addTestCase(testCaseName: response.name,
                                                  testCaseId: response.id)
@@ -98,7 +98,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
             failureDescription = issue.compactDescription
         }
         let requestData = TestCaseFinishDTO(result: TestStatus.failed,
-                                            endTime: Date().toString(),
+                                            endTime: Date().toISO8601FormattedString(),
                                             reason: failureDescription)
         zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
         
@@ -118,7 +118,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
                 status = configuration.skipsAsFailures ? TestStatus.failed : TestStatus.skipped
             }
             let requestData = TestCaseFinishDTO(result: status,
-                                                endTime: Date().toString())
+                                                endTime: Date().toISO8601FormattedString())
             zebrunnerClient.finishTest(testCaseName: testCase.name, testCaseFinishRequest: requestData)
         }
         RunContext.getInstance().finishTestCase()
@@ -138,7 +138,7 @@ public class ZebrunnerObserver: NSObject, XCTestObservation {
     /// - Parameters:
     ///  - testBundle: object of Bundle
     public func testBundleDidFinish(_ testBundle: Bundle) {
-        let requestData = TestRunFinishDTO(endTime: Date().toString())
+        let requestData = TestRunFinishDTO(endTime: Date().toISO8601FormattedString())
         zebrunnerClient.finishTestRun(testRunFinishRequest: requestData)
         RunContext.getInstance().finishTestRun()
     }
