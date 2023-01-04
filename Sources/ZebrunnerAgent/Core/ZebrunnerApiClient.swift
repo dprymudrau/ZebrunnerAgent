@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  ZebrunnerApiClient.swift
 //  
 //
 //  Created by Dzmitry Prymudrau on 20.07.22.
@@ -9,23 +9,22 @@ import Foundation
 import XCTest
 
 public class ZebrunnerApiClient {
+    
     private static var instance: ZebrunnerApiClient?
     private var requestMgr: RequestManager!
-    private var projectKey = ""
-    private var testRunResponse: TestRunResponse?
-    private var testCasesExecuted: [String: Int] = [:]
+    private var configuration: Configuration!
     
-    private init(baseUrl: String, projectKey: String, refreshToken: String) {
-        self.projectKey = projectKey
-        self.requestMgr = RequestManager(baseUrl: baseUrl, refreshToken: refreshToken)
+    private init(configuration: Configuration) {
+        self.configuration = configuration
+        self.requestMgr = RequestManager(baseUrl: configuration.baseUrl, refreshToken: configuration.accessToken)
         if let authToken = self.authenticate() {
             self.requestMgr.setAuthToken(authToken: authToken)
         }
     }
     
-    public static func setUp(baseUrl: String, projectKey: String, refreshToken: String) -> ZebrunnerApiClient? {
-        if(self.instance == nil) {
-            self.instance = ZebrunnerApiClient(baseUrl: baseUrl, projectKey: projectKey, refreshToken: refreshToken)
+    public static func setUp(configuration: Configuration) -> ZebrunnerApiClient? {
+        if (self.instance == nil) {
+            self.instance = ZebrunnerApiClient(configuration: configuration)
         }
         return instance
     }
@@ -43,7 +42,6 @@ public class ZebrunnerApiClient {
         let request = self.requestMgr.buildAuthRequest()
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         
-        //Check if data exists and can be mapped
         guard let data = data else {
             print("Failed to authenticate: \(String(describing: error?.localizedDescription))")
             return nil
@@ -56,201 +54,242 @@ public class ZebrunnerApiClient {
         return authResponse.authToken
     }
     
-    /// Creates new test run on Zebrunner
-    ///  - Parameters:
-    ///     - testRunName: name of test run that will be show on Test Runs page
-    ///     - startTime: ISO8601 timestamp with an offset from UTC of test run
-    public func startTestRun(testRunName: String, startTime: String) {
-        let request = requestMgr.buildStartTestRunRequest(projectKey: self.projectKey, testRunName: testRunName, startTime: startTime)
+    /// Creates a new test run on Zebrunner
+    /// - Parameter testRunStartRequest: details to start test run
+    public func startTestRun(testRunStartRequest: TestRunStartDTO) -> TestRunStartResponse? {
+        let request = requestMgr.buildStartTestRunRequest(projectKey: configuration.projectKey,
+                                                          testRunStartRequest: testRunStartRequest)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         
         guard let data = data else {
             print("Failed to create Test Run: \(String(describing: error?.localizedDescription))")
-            return
+            return nil
         }
-        if let startTestRunResponse = try? JSONDecoder().decode(TestRunResponse.self, from: data) {
-            self.testRunResponse = startTestRunResponse
+        guard let testRunStartResponse = try? JSONDecoder().decode(TestRunStartResponse.self, from: data) else {
+            print("Failed to map start test run response into TestRunStartResponse from: \(data)")
+            return nil
         }
+        return testRunStartResponse
     }
     
     
     /// Finishes existing test run on Zebrunner
     ///  - Parameters:
-    ///   - endTime: ISO8601 timestamp with an offset from UTC of test run finish
-    public func finishTestRun(endTime: String) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+    ///   - testRunFinishRequest: details to finish test run
+    public func finishTestRun(testRunFinishRequest: TestRunFinishDTO) {
+        guard let id = getTestRunId() else {
             return
         }
-        let request = requestMgr.buildFinishTestRunRequest(testRunId: id , endTime: endTime)
+        let request = requestMgr.buildFinishTestRunRequest(testRunId: id, testRunFinishRequest: testRunFinishRequest)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
     /// Starts test case execution in given test run on Zebrunner
     ///  - Parameters:
-    ///     - testData: data about executed test contains test case name, class name, method maintainer
-    ///     - startTime: ISO8601 timestamp with an offset from UTC of test execution start
-    public func startTest(testData: TestData, startTime: String) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
-            return
+    ///     - testCaseStartRequest: details to start test case
+    public func startTest(testCaseStartRequest: TestCaseStartDTO) -> TestCaseStartResponse? {
+        guard let id = getTestRunId() else {
+            return nil
         }
-        let request = requestMgr.buildStartTestRequest(testRunId: id, testData: testData, startTime: startTime)
+        let request = requestMgr.buildStartTestRequest(testRunId: id, testCaseStartRequest: testCaseStartRequest)
         let (data, _, error) = URLSession.shared.syncRequest(with: request)
         guard let data = data else {
             print("Failed to create test case execution: \(String(describing: error?.localizedDescription))")
-            return
+            return nil
         }
-        guard let startTestCaseResponse = try? JSONDecoder().decode(StartTestCaseResponse.self, from: data) else {
-            print("Failed to map start test case response into StartTestCaseResponse from: \(data)")
-            return
+        guard let testCaseStartResponse = try? JSONDecoder().decode(TestCaseStartResponse.self, from: data) else {
+            print("Failed to map start test case response into TestCaseStartResponse from: \(data)")
+            return nil
         }
-        
-        self.testCasesExecuted[startTestCaseResponse.name] = startTestCaseResponse.id
+        return testCaseStartResponse
     }
     
     /// Finishes test case on Zebrunner with the reason of the result
     ///  - Parameters:
-    ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
-    ///     - reason: message somehow explaining the result
-    ///     - name: name of test case that shuld be finished
-    ///     - endTime: ISO8601 timestamp with an offset from UTC of test execution finish
-    public func finishTest(result: String, reason: String, name: String, endTime: String) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+    ///     - testCaseName: test case name
+    ///     - testCaseFinishRequest: details to finish test case
+    public func finishTest(testCaseName: String, testCaseFinishRequest: TestCaseFinishDTO) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
         let request = requestMgr.buildFinishTestRequest(testRunId: id,
-                                                        testId: self.testCasesExecuted[name]!,
-                                                        result: result,
-                                                        reason: reason,
-                                                        endTime: endTime)
+                                                        testId: testCaseId,
+                                                        testCaseFinishRequest: testCaseFinishRequest)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    /// Finishes test case on Zebrunner
+    /// Updates test case data on Zebrunner
     ///  - Parameters:
-    ///     - result: result of test case execution can be PASSED, FAILED, ABORTED, SKIPPED
-    ///     - name: name of test case that shuld be finished
-    ///     - endTime: ISO8601 timestamp with an offset from UTC of test execution finish
-    public func finishTest(result: String, name: String, endTime: String) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+    ///    - testCaseUpdateRequest: details to update test case
+    public func updateTest(testCaseUpdateRequest: TestCaseUpdateDTO) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseUpdateRequest.name) else {
             return
         }
-        let request = requestMgr.buildFinishTestRequest(testRunId: id,
-                                                        testId: self.testCasesExecuted[name]!,
-                                                        result: result,
-                                                        endTime: endTime)
+        let request = requestMgr.buildUpdateTestRequest(testRunId: id, testId: testCaseId, testCaseUpdateRequest: testCaseUpdateRequest)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    /// Updates test case data
-    ///  - Parameters:
-    ///   - testData: data about executed test contains test case name, class name, method maintainer
-    public func updateTest(testData: TestData) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+    /// Sends bulk logs for given test case
+    /// - Parameters:
+    ///   - testCaseName: name of test case to send logs
+    ///   - logMessages: log messages to send
+    ///   - level: log level of log messages
+    ///   - timestamp: timestamp for log messages
+    public func sendLogs(testCaseName: String, logMessages: [String], level: LogLevel, timestamp: String) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        let request = requestMgr.buildUpdateTestRequest(testRunId: id, testId: self.testCasesExecuted[testData.name]!, testData: testData)
+        let request = requestMgr.buildLogRequest(testRunId: id,
+                                                 testId: testCaseId,
+                                                 logMessages: logMessages,
+                                                 level: level,
+                                                 timestamp: timestamp)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    /// Attaches screenshot for given test case
+    /// Attaches a screenshot for given test case
     ///  - Parameters:
     ///     - testCaseName: name of test case to attach screenshot
     ///     - screenshot: png representation of screenshot
     public func sendScreenshot(_ testCaseName: String, screenshot: Data?) {
-        let request = requestMgr.buildScreenshotRequest(testRunId: getTestRunId(),
-                                                        testId: self.testCasesExecuted[testCaseName]!,
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
+            return
+        }
+        let request = requestMgr.buildScreenshotRequest(testRunId: id,
+                                                        testId: testCaseId,
                                                         screenshot: screenshot)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseArtifact(for testCase: String, with artifact: Data?, name: String) {
-        guard let testCaseId = testCasesExecuted[testCase] else {
-            print("There is no test case in current run executed \(String(describing: testRunResponse))")
+    /// Attaches an artifact for given test case
+    /// - Parameters:
+    ///   - testCaseName: name of test case to attach artifact
+    ///   - artifact: binary data of an artifact
+    ///   - name: artifact name
+    public func sendTestCaseArtifact(for testCaseName: String, with artifact: Data?, name: String) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        
         guard let data = artifact else {
             print("There is no data to attach")
             return
         }
-        
-        let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestCaseArtifactsRequest(testRunId: id,
                                                                testCaseId: testCaseId,
                                                                artifact: data,
                                                                name: name)
-        
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    /// Attaches an artifact to test run
+    /// - Parameters:
+    ///   - artifact: binary data of an artifact
+    ///   - name: artifact name
     public func sendTestRunArtifact(artifact: Data?, name: String) {
+        guard let id = getTestRunId() else {
+            return
+        }
         guard let data = artifact else {
             print("There is no data to attach")
             return
         }
-        let request = requestMgr.buildTestRunArtifactsRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestRunArtifactsRequest(testRunId: id,
                                                               artifact: data,
                                                               name: name)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseArtifactReference(testCase: String, references: [String: String]) {
-        guard let testCaseId = testCasesExecuted[testCase] else {
-            print("There is no test case in current run executed \(String(describing: testRunResponse))")
+    /// Attaches an artifact reference for given test case
+    /// - Parameters:
+    ///   - testCaseName: name of test case to attach artifact reference
+    ///   - references: array with key-value pairs: name of the reference and its value
+    public func sendTestCaseArtifactReference(testCaseName: String, references: [String: String]) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        
-        let request = requestMgr.buildTestCaseArtifactReferencesRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestCaseArtifactReferencesRequest(testRunId: id,
                                                                         testCaseId: testCaseId,
                                                                         references: references)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    /// Attaches an artifact reference for test run
+    /// - Parameters:
+    ///   - references: array with key-value pairs: name of the reference and its value
     public func sendTestRunArtifactReferences(references: [String: String]) {
-        let request = requestMgr.buildTestRunArtifactReferencesRequest(testRunId: getTestRunId(), references: references)
+        guard let id = getTestRunId() else {
+            return
+        }
+        let request = requestMgr.buildTestRunArtifactReferencesRequest(testRunId: id, references: references)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
+    /// Attaches an array of labels to test run
+    /// - Parameter labels: array with key-value pairs: name of the label and its value
     public func sendTestRunLabels(_ labels: [String: String]) {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id found \(String(describing: testRunResponse))")
+        guard let id = getTestRunId() else {
             return
         }
-        
         let request = requestMgr.buildTestRunLabelsRequest(testRunId: id, labels: labels)
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func sendTestCaseLabels(for testCase: String, labels: [String: String]) {
-        guard let testCaseId = testCasesExecuted[testCase] else {
-            print("Cannot find \(testCase) in executed tests scope")
+    /// Attaches an array of labels to given test case
+    /// - Parameter testCaseName: test case name
+    /// - Parameter labels: array with key-value pairs: name of the label and its value
+    public func sendTestCaseLabels(for testCaseName: String, labels: [String: String]) {
+        guard let id = getTestRunId(),
+              let testCaseId = getTestCaseId(testCaseName: testCaseName) else {
             return
         }
-        let request = requestMgr.buildTestCaseLabelsRequest(testRunId: getTestRunId(),
+        let request = requestMgr.buildTestCaseLabelsRequest(testRunId: id,
                                                             testCaseId: testCaseId,
                                                             labels: labels
         )
         _ = URLSession.shared.syncRequest(with: request)
     }
     
-    public func getTestRunId() -> Int {
-        guard let id = testRunResponse?.id else {
-            print("There is no test run id or test case id found \(String(describing: testRunResponse))")
-            return 0
+    /// Updates results for given test cases for given TCM
+    /// - Parameters:
+    ///   - testCaseId: test case id
+    ///   - results: array of objects that contain information of TCM type, TCM test case ids and their results
+    public func upsertTestCaseResults(for testCaseId: Int, results: [TcmTestCaseResultDTO]) {
+        guard let id = getTestRunId() else {
+            return
+        }
+        let request = requestMgr.buildTestCaseResultsRequest(testRunId: id,
+                                                             testCaseId: testCaseId,
+                                                             results: results)
+        _ = URLSession.shared.syncRequest(with: request)
+    }
+    
+    private func getTestRunId() -> Int? {
+        guard let id = RunContext.getInstance().getTestRunId() else {
+            print("There is no test run id found")
+            return nil
         }
         return id
     }
     
+    private func getTestCaseId(testCaseName: String) -> Int? {
+        guard let testCaseId = RunContext.getInstance().getTestCaseId(testCaseName: testCaseName) else {
+            print("There is no test case found \(testCaseName)")
+            return nil
+        }
+        return testCaseId
+    }
 }
 
-// Extension of URLSesssion to execute synchronous requests.
+// Extension of URLSesssion to execute synchronous requests
 extension URLSession {
     
-    ///Performs synchronous network request.
+    /// Performs synchronous network request.
     /// - Parameter request: URLRequest object
     /// - Returns: Data, URLResponse, Error
     fileprivate func syncRequest(with request: URLRequest) -> (Data?, URLResponse?, Error?) {
@@ -282,3 +321,23 @@ extension URLSession {
         return (data, response, error)
     }
 }
+
+extension Date {
+    
+    /// Returns formatted date as a string in ISO8601 timestamp with an offset from UTC
+    /// - Parameter format: date format
+    /// - Returns: formatted String
+    func toISO8601FormattedString(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ") -> String {
+        let df = DateFormatter()
+        df.dateFormat = format
+        return df.string(from: self)
+    }
+    
+    /// Returns epoch unix timestamp with millisecond-precision
+    /// - Returns: String timestamp
+    func toUnixTimestampMillisec() -> String {
+        let timestamp = Int(self.timeIntervalSince1970 * 1_000)
+        return String(timestamp)
+    }
+}
+
