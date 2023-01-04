@@ -161,14 +161,14 @@ func testSmth() {
 Zebrunner agent collects your console output for a certain test case and sends captured logs to Zebrunner out of the box. No additional configuration is needed. 
 
 _Which types of log messages are intercepted:_
+
 1. default `XCTest/XCUITest` logging (like "Tap button", "Checking existence of" etc.);
 2. custom logging using `NSLog`;
 3. custom unified logging: `Logger` interface from `os` module and `os_log` from `os.log`.
 
-_Not intercepted if REPORTING_DEBUG_LOGS_ENABLED/ReportingDebugLogsEnabled is `false`:_
-Debugging functions from Swift Standard Library: `print`, `debugPrint` and `dump`.
+_Not intercepted if `REPORTING_DEBUG_LOGS_ENABLED` / `ReportingDebugLogsEnabled` is `false`:_
 
-To include debug functions for sending such log messages to Zebrunner, set environment variable `REPORTING_DEBUG_LOGS_ENABLED` or property `ReportingDebugLogsEnabled` to `true`.
+- Debugging functions from Swift Standard Library: `print`, `debugPrint` and `dump`. To include them and send such log messages to Zebrunner, set environment variable `REPORTING_DEBUG_LOGS_ENABLED` or property `ReportingDebugLogsEnabled` to `true`.
 
 In case of necessity sending custom logs for specific test case to Zebrunner, use `#sendLogs` function from `Log` class.
 
@@ -222,7 +222,7 @@ func testSmth() {
 ```
 
 ## Locale
-If you want to get full reporting experience and collect as much information in Zebrunner as its possible, you may want to report the test run locale. It can be done by 2 options:
+If you want to get full reporting experience and collect as much information in Zebrunner as its possible, you may want to report the test run locale. It can be done via one of the options below:
 1. By providing a value via environment variable `REPORTING_RUN_LOCALE` or property `ReportingRunLocale`.
 2. Using `#setLocale` function from `Locale` class:
 
